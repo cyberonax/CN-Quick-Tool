@@ -111,12 +111,12 @@ def main():
                         "https://www.cybernations.net/nation_drill_display.asp?Nation_ID=" +
                         result_df["Nation ID"].astype(str)
                     )
-                    # Select the desired columns.
-                    display_df = result_df[["Ruler Name", "Resource 1+2", "Alliance", "Team", "Nation Drill Link"]]
+                    # Reorder columns to include "Nation ID" first.
+                    display_df = result_df[["Nation ID", "Ruler Name", "Resource 1+2", "Alliance", "Team", "Nation Drill Link"]]
                     
                     st.dataframe(display_df)
                     
-                    # CSV download
+                    # Provide a CSV download option.
                     csv = display_df.to_csv(index=False)
                     st.download_button("Download Results as CSV", csv, file_name="ruler_search_results.csv", mime="text/csv")
     

@@ -15,7 +15,6 @@ def get_resource_1_2(row):
     """
     r1 = row.get("Resource 1", "")
     r2 = row.get("Resource 2", "")
-    # Ensure the values are strings and strip any extra whitespace.
     r1 = str(r1).strip() if pd.notnull(r1) else ""
     r2 = str(r2).strip() if pd.notnull(r2) else ""
     if r1 and r2:
@@ -35,7 +34,6 @@ def download_and_extract_zip(url):
         response = requests.get(url)
         response.raise_for_status()
     except requests.RequestException:
-        # Hide error messages by not printing them
         return None
 
     try:
@@ -77,7 +75,7 @@ def main():
     st.set_page_config(layout="wide")
     st.title("Cyber Nations Ruler Search")
     
-    # Button to download and load the nation statistics data.
+    # Section: Download Nation Statistics
     if st.button("Download Nation Statistics"):
         with st.spinner("Loading data..."):
             df = load_data()
@@ -86,7 +84,7 @@ def main():
         else:
             st.error("Failed to load data.")
     
-    # If data has been loaded, show the ruler search interface.
+    # Section: Ruler Search Interface
     if "df" in st.session_state:
         df = st.session_state.df.copy()
         
@@ -94,34 +92,59 @@ def main():
         ruler_names_input = st.text_area("Paste the ruler names here", height=150)
         
         if st.button("Search"):
-            # Split the text input by newlines and remove any excess whitespace.
+            # Convert input to a list (ignoring extra whitespace and empty lines)
             rulers = [name.strip() for name in ruler_names_input.splitlines() if name.strip()]
             if not rulers:
                 st.info("No ruler names entered. Please paste one or more ruler names.")
             else:
-                # Convert both the input ruler names and DataFrame "Ruler Name" column to lowercase for case-insensitive comparison.
+                # Case-insensitive search: convert both the search list and DataFrame column to lowercase.
                 lower_rulers = [r.lower() for r in rulers]
                 result_df = df[df["Ruler Name"].str.lower().isin(lower_rulers)].copy()
                 
                 if result_df.empty:
                     st.info("No matching ruler names found. Check your input for spelling or extra spaces.")
                 else:
-                    # Construct the Resource 1+2 column.
+                    # Calculate Resource 1+2 column.
                     result_df["Resource 1+2"] = result_df.apply(get_resource_1_2, axis=1)
-                    # Construct the Nation Drill Link by combining the base URL with Nation ID.
+                    # Build the Nation Drill Link.
                     result_df["Nation Drill Link"] = (
                         "https://www.cybernations.net/nation_drill_display.asp?Nation_ID=" +
                         result_df["Nation ID"].astype(str)
                     )
-                    # Select just the columns we need.
+                    # Select the desired columns.
                     display_df = result_df[["Ruler Name", "Resource 1+2", "Alliance", "Team", "Nation Drill Link"]]
                     
-                    # Display the results in a table.
                     st.dataframe(display_df)
                     
-                    # Provide a CSV download option.
+                    # CSV download
                     csv = display_df.to_csv(index=False)
                     st.download_button("Download Results as CSV", csv, file_name="ruler_search_results.csv", mime="text/csv")
+    
+    st.markdown("---")
+    
+    # -----------------------
+    # NEW SECTION: Process Comma-Separated Names
+    # -----------------------
+    st.subheader("Comma-Separated Name Processor")
+    st.markdown(
+        "Paste a comma-separated list of names below. "
+        "Output 1 will show the names on separate lines, and Output 2 will show each name wrapped in quotes and a trailing comma."
+    )
+    
+    names_input = st.text_area("Enter names (separated by commas)", height=100)
+    
+    if names_input:
+        # Split the input on commas and remove extra whitespace.
+        names_list = [name.strip() for name in names_input.split(",") if name.strip()]
+        
+        # Output 1: Each name on its own separate line.
+        output1 = "\n".join(names_list)
+        
+        # Output 2: Each name on its separate line, wrapped in quotes and appended with a comma.
+        output2 = "\n".join([f'"{name}",' for name in names_list])
+        
+        st.text_area("Output 1 (each name on a separate line)", value=output1, height=150)
+        st.text_area("Output 2 (quoted names with trailing comma)", value=output2, height=150)
 
 if __name__ == "__main__":
     main()

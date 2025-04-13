@@ -73,7 +73,7 @@ def load_data():
 # -----------------------
 def main():
     st.set_page_config(layout="wide")
-    st.title("Cyber Nations Ruler Search")
+    st.title("Cyber Nations | Nation Ruler Search")
     
     # Section: Download Nation Statistics
     if st.button("Download Nation Statistics"):

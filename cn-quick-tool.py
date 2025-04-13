@@ -6,6 +6,27 @@ import io
 from datetime import datetime, timedelta
 
 # -----------------------
+# HELPER FUNCTION: Combine Resource 1 and Resource 2
+# -----------------------
+def get_resource_1_2(row):
+    """
+    Combine the values from "Resource 1" and "Resource 2" into a single string.
+    If either resource is missing, show only the available one.
+    """
+    r1 = row.get("Resource 1", "")
+    r2 = row.get("Resource 2", "")
+    # Ensure the values are strings and strip any extra whitespace.
+    r1 = str(r1).strip() if pd.notnull(r1) else ""
+    r2 = str(r2).strip() if pd.notnull(r2) else ""
+    if r1 and r2:
+        return f"{r1}, {r2}"
+    elif r1:
+        return r1
+    elif r2:
+        return r2
+    return ""
+
+# -----------------------
 # DOWNLOAD & DATA LOADING FUNCTIONS
 # -----------------------
 def download_and_extract_zip(url):
@@ -54,7 +75,7 @@ def load_data():
 # -----------------------
 def main():
     st.set_page_config(layout="wide")
-    st.title("Cyber Nations | Nation Ruler Tool")
+    st.title("Cyber Nations Ruler Search")
     
     # Button to download and load the nation statistics data.
     if st.button("Download Nation Statistics"):
@@ -85,13 +106,15 @@ def main():
                 if result_df.empty:
                     st.info("No matching ruler names found. Check your input for spelling or extra spaces.")
                 else:
+                    # Construct the Resource 1+2 column.
+                    result_df["Resource 1+2"] = result_df.apply(get_resource_1_2, axis=1)
                     # Construct the Nation Drill Link by combining the base URL with Nation ID.
                     result_df["Nation Drill Link"] = (
                         "https://www.cybernations.net/nation_drill_display.asp?Nation_ID=" +
                         result_df["Nation ID"].astype(str)
                     )
                     # Select just the columns we need.
-                    display_df = result_df[["Ruler Name", "Alliance", "Team", "Nation Drill Link"]]
+                    display_df = result_df[["Ruler Name", "Resource 1+2", "Alliance", "Team", "Nation Drill Link"]]
                     
                     # Display the results in a table.
                     st.dataframe(display_df)

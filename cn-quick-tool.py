@@ -3,6 +3,7 @@ import pandas as pd
 import requests
 import zipfile
 import io
+import re
 from datetime import datetime, timedelta
 
 # -----------------------
@@ -111,7 +112,7 @@ def main():
                         "https://www.cybernations.net/nation_drill_display.asp?Nation_ID=" +
                         result_df["Nation ID"].astype(str)
                     )
-                    # Reorder columns to include "Nation ID" first.
+                    # Reorder columns: Nation ID first.
                     display_df = result_df[["Nation ID", "Ruler Name", "Resource 1+2", "Alliance", "Team", "Nation Drill Link"]]
                     
                     st.dataframe(display_df)
@@ -127,15 +128,15 @@ def main():
     # -----------------------
     st.subheader("Comma-Separated Name Processor")
     st.markdown(
-        "Paste a comma-separated list of names below. "
-        "Output 1 will show the names on separate lines, and Output 2 will show each name wrapped in quotes and a trailing comma."
+        "Paste a list of names below (separated by commas or new lines). "
+        "Output 1 will show the names on separate lines, Output 2 will show each name wrapped in quotes with a trailing comma, and Output 3 will show the names joined by a comma."
     )
     
-    names_input = st.text_area("Enter names (separated by commas)", height=100)
+    names_input = st.text_area("Enter names", height=100)
     
     if names_input:
-        # Split the input on commas and remove extra whitespace.
-        names_list = [name.strip() for name in names_input.split(",") if name.strip()]
+        # Split the input on commas or newlines using regex.
+        names_list = [name.strip() for name in re.split(r"[,\n]+", names_input) if name.strip()]
         
         # Output 1: Each name on its own separate line.
         output1 = "\n".join(names_list)
@@ -143,8 +144,12 @@ def main():
         # Output 2: Each name on its separate line, wrapped in quotes and appended with a comma.
         output2 = "\n".join([f'"{name}",' for name in names_list])
         
+        # Output 3: Names joined with a comma and a space.
+        output3 = ", ".join(names_list)
+        
         st.text_area("Output 1 (each name on a separate line)", value=output1, height=150)
         st.text_area("Output 2 (quoted names with trailing comma)", value=output2, height=150)
+        st.text_area("Output 3 (names joined by a comma)", value=output3, height=100)
 
 if __name__ == "__main__":
     main()

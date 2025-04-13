@@ -124,32 +124,32 @@ def main():
     st.markdown("---")
     
     # -----------------------
-    # NEW SECTION: Process Comma-Separated Names
+    # COLLAPSIBLE SECTION: Process Comma-Separated Names
     # -----------------------
-    st.subheader("Comma-Separated Name Processor")
-    st.markdown(
-        "Paste a list of names, numbers, or other text below (separated by commas or new lines). "
-        "Output 1 will show the names on separate lines, Output 2 will show each name wrapped in quotes with a trailing comma, and Output 3 will show the names joined by a comma."
-    )
-    
-    names_input = st.text_area("Enter text", height=100)
-    
-    if names_input:
-        # Split the input on commas or newlines using regex.
-        names_list = [name.strip() for name in re.split(r"[,\n]+", names_input) if name.strip()]
+    with st.expander("Comma-Separated Name Processor"):
+        st.markdown(
+            "Paste a list of names, numbers, or other text below (separated by commas or new lines). "
+            "Output 1 will show the names on separate lines, Output 2 will show each name wrapped in quotes with a trailing comma, and Output 3 will show the names joined by a comma."
+        )
         
-        # Output 1: Each name on its own separate line.
-        output1 = "\n".join(names_list)
+        names_input = st.text_area("Enter text", height=100)
         
-        # Output 2: Each name on its separate line, wrapped in quotes and appended with a comma.
-        output2 = "\n".join([f'"{name}",' for name in names_list])
-        
-        # Output 3: Names joined with a comma and a space.
-        output3 = ", ".join(names_list)
-        
-        st.text_area("Output 1 (each name on a separate line)", value=output1, height=150)
-        st.text_area("Output 2 (quoted names with trailing comma)", value=output2, height=150)
-        st.text_area("Output 3 (names joined by a comma)", value=output3, height=100)
+        if names_input:
+            # Split the input on commas or newlines using regex.
+            names_list = [name.strip() for name in re.split(r"[,\n]+", names_input) if name.strip()]
+            
+            # Output 1: Each name on its own separate line.
+            output1 = "\n".join(names_list)
+            
+            # Output 2: Each name on its separate line, wrapped in quotes and appended with a comma.
+            output2 = "\n".join([f'"{name}",' for name in names_list])
+            
+            # Output 3: Names joined with a comma and a space.
+            output3 = ", ".join(names_list)
+            
+            st.text_area("Output 1 (each name on a separate line)", value=output1, height=150)
+            st.text_area("Output 2 (quoted names with trailing comma)", value=output2, height=150)
+            st.text_area("Output 3 (names joined by a comma)", value=output3, height=100)
 
 if __name__ == "__main__":
     main()

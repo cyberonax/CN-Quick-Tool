@@ -54,7 +54,7 @@ def load_data():
 # -----------------------
 def main():
     st.set_page_config(layout="wide")
-    st.title("Cyber Nations Ruler Search")
+    st.title("Cyber Nations | Nation Ruler Tool")
     
     # Button to download and load the nation statistics data.
     if st.button("Download Nation Statistics"):
@@ -78,8 +78,10 @@ def main():
             if not rulers:
                 st.info("No ruler names entered. Please paste one or more ruler names.")
             else:
-                # Filter the DataFrame for rows where the "Ruler Name" matches one of the names.
-                result_df = df[df["Ruler Name"].isin(rulers)].copy()
+                # Convert both the input ruler names and DataFrame "Ruler Name" column to lowercase for case-insensitive comparison.
+                lower_rulers = [r.lower() for r in rulers]
+                result_df = df[df["Ruler Name"].str.lower().isin(lower_rulers)].copy()
+                
                 if result_df.empty:
                     st.info("No matching ruler names found. Check your input for spelling or extra spaces.")
                 else:

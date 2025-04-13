@@ -129,6 +129,7 @@ def main():
     # -----------------------
     # COLLAPSIBLE SECTION: Process Comma-Separated Names
     # -----------------------
+    st.markdown(f"### Other Tools")
     with st.expander("Comma-Separated Name Processor"):
         st.markdown(
             "Paste a list of names, numbers, or other text below (separated by commas or new lines). "

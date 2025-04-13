@@ -128,7 +128,7 @@ def main():
     # -----------------------
     st.subheader("Comma-Separated Name Processor")
     st.markdown(
-        "Paste a list of names below (separated by commas or new lines). "
+        "Paste a list of names, numbers, or other text below (separated by commas or new lines). "
         "Output 1 will show the names on separate lines, Output 2 will show each name wrapped in quotes with a trailing comma, and Output 3 will show the names joined by a comma."
     )
     

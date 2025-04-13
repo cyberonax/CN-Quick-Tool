@@ -13,41 +13,36 @@ def download_and_extract_zip(url):
     try:
         response = requests.get(url)
         response.raise_for_status()
-    except requests.RequestException as e:
-        st.error(f"Error downloading file from {url}: {e}")
+    except requests.RequestException:
+        # Hide error messages by not printing them
         return None
 
     try:
         with zipfile.ZipFile(io.BytesIO(response.content)) as z:
             file_list = z.namelist()
             if not file_list:
-                st.error("The zip file is empty.")
                 return None
             file_name = file_list[0]
             with z.open(file_name) as file:
                 # Adjust delimiter and encoding as needed
                 df = pd.read_csv(file, delimiter="|", encoding="ISO-8859-1")
                 return df
-    except Exception as e:
-        st.error(f"Error processing zip file: {e}")
+    except Exception:
         return None
 
 def load_data():
-    """Try downloading data using a list of dates and URL patterns."""
+    """Try downloading data using a list of dates and URL patterns without showing debug messages."""
     today = datetime.now()
     base_url = "https://www.cybernations.net/assets/CyberNations_SE_Nation_Stats_"
-    
-    # Try today, yesterday, and tomorrow dates for flexibility
     dates_to_try = [today, today - timedelta(days=1), today + timedelta(days=1)]
+    
     for dt in dates_to_try:
         date_str = f"{dt.month}{dt.day}{dt.year}"
         url1 = base_url + date_str + "510001.zip"
         url2 = base_url + date_str + "510002.zip"
         
-        st.write(f"Trying URL: {url1}")
         df = download_and_extract_zip(url1)
         if df is None:
-            st.write(f"Trying alternative URL: {url2}")
             df = download_and_extract_zip(url2)
         if df is not None:
             st.success(f"Data loaded successfully from date: {date_str}")

@@ -132,7 +132,7 @@ def main():
         "Output 1 will show the names on separate lines, Output 2 will show each name wrapped in quotes with a trailing comma, and Output 3 will show the names joined by a comma."
     )
     
-    names_input = st.text_area("Enter names", height=100)
+    names_input = st.text_area("Enter text", height=100)
     
     if names_input:
         # Split the input on commas or newlines using regex.

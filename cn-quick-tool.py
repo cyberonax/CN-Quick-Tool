@@ -76,6 +76,9 @@ def main():
     st.set_page_config(layout="wide")
     st.title("Cyber Nations | Nation Ruler Search")
     
+    # Brief description under the main title
+    st.markdown("This tool helps you simplify returning information from your list of pasted Nation Rulers. Click Download Nation Statistics" to proceed.")
+    
     # Section: Download Nation Statistics
     if st.button("Download Nation Statistics"):
         with st.spinner("Loading data..."):

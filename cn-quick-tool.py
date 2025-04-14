@@ -170,9 +170,12 @@ def main():
         st.markdown(
             """
             Enter a list of Nation or Ruler Names (one per line) below and select an alliance.
-            This tool will display the nations from the selected alliance that are *not* in your list.
+            This tool will display two tables:
             
-            If no names are provided, the result will remain blank.
+            - **Nations in alliance not in your list:** Nations within the alliance that are missing from your input.
+            - **Nations in alliance in your list:** Nations within the alliance that match your input.
+            
+            If no names are provided, both results will remain blank.
             """
         )
         # Check if the data is loaded to extract alliance options
@@ -204,14 +207,19 @@ def main():
             alliance_df = alliance_df[alliance_df["Alliance"] == alliance_selected]
             
             if lower_filters:
-                # Filter out rows that have either the Ruler Name or Nation Name present in the input list.
+                # Create mask where either the Ruler Name or Nation Name matches an input name (case-insensitive).
                 mask = alliance_df["Ruler Name"].str.lower().isin(lower_filters) | alliance_df["Nation Name"].str.lower().isin(lower_filters)
-                result_alliance_df = alliance_df[~mask].copy()  # nations in alliance that are not in the list
+                result_not_in_list = alliance_df[~mask].copy()  # Nations in alliance not in the list
+                result_in_list = alliance_df[mask].copy()         # Nations in alliance in your list
             else:
-                result_alliance_df = pd.DataFrame()  # blank result if no names provided
+                result_not_in_list = pd.DataFrame()  # Blank result if no names provided.
+                result_in_list = pd.DataFrame()
             
             st.markdown("#### Nations in alliance not in your list:")
-            st.dataframe(result_alliance_df)
+            st.dataframe(result_not_in_list)
+            
+            st.markdown("#### Nations in alliance in your list:")
+            st.dataframe(result_in_list)
         else:
             st.info("Nation Statistics data not loaded yet. Please download the data first.")
 

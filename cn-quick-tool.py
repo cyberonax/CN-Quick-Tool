@@ -316,16 +316,32 @@ def main():
                 for i in range(0, len(rulers_list), 26):
                     groups.append(rulers_list[i:i+26])
                 
+                # Insert a JavaScript function for copying text
+                st.markdown("""
+                <script>
+                function copyTextFunction(textareaID, buttonID) {
+                    var copyText = document.getElementById(textareaID);
+                    navigator.clipboard.writeText(copyText.value).then(function() {
+                        var btn = document.getElementById(buttonID);
+                        var originalText = btn.innerHTML;
+                        btn.innerHTML = "Copied!";
+                        setTimeout(function(){ btn.innerHTML = originalText; }, 2000);
+                    });
+                }
+                </script>
+                """, unsafe_allow_html=True)
+                
                 # Display each block in its own text box with a copy button.
                 for idx, group in enumerate(groups):
                     block_text = "\n".join(group)
-                    # Create a unique ID for the HTML elements so the copy button knows which text to copy.
+                    # Create unique IDs for the textarea and its copy button.
                     unique_id = f"cc_textarea_{idx}"
+                    button_id = f"copy_{unique_id}"
                     html_block = f"""
                     <div style="margin-bottom:1em;">
                         <textarea id="{unique_id}" style="width:100%; height:150px;">{block_text}</textarea>
                         <br>
-                        <button onclick="navigator.clipboard.writeText(document.getElementById('{unique_id}').value)">Copy</button>
+                        <button id="{button_id}" onclick="copyTextFunction('{unique_id}','{button_id}')">Copy</button>
                     </div>
                     """
                     st.markdown(html_block, unsafe_allow_html=True)

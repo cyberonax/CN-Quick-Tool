@@ -278,6 +278,8 @@ def main():
             else:
                 st.info("Nation Statistics data not loaded yet. Please download the data first.")
     
+    st.markdown("---")
+    
     # -----------------------
     # COLLAPSIBLE SECTION: Carbon Copy Rulers Tool
     # -----------------------
@@ -286,8 +288,8 @@ def main():
             """
             Select an alliance to retrieve its list of Nation Rulers.
             
-            The ruler names are displayed one per line and grouped into blocks of 26 names,
-            with an empty line separating each block.
+            The ruler names are displayed one per line and grouped into blocks of 26 names.
+            Each block is presented in its own text box with a copy-to-clipboard button.
             """
         )
         # Retrieve alliance options
@@ -300,7 +302,7 @@ def main():
             default_index = 0
 
         alliance_selected_cc = st.selectbox("Select Alliance", options=alliance_options, index=default_index, key="alliance_select_cc")
-        if st.button("Load Nation Rulers for Selected Alliance", key="cc_generate", on_click=keep_cc_open):
+        if st.button("Generate", key="cc_generate", on_click=keep_cc_open):
             st.session_state.cc_expanded = True  # Ensure the section remains open after generation.
             if "df" in st.session_state:
                 cc_df = st.session_state.df.copy()
@@ -311,17 +313,21 @@ def main():
                 rulers_list = [ruler.strip() for ruler in rulers_list if ruler.strip()]
                 rulers_list = sorted(rulers_list, key=str.lower)
                 
-                # Group the rulers into blocks of 26 per block.
+                # Group the rulers into blocks of 26 names per block.
                 groups = []
                 for i in range(0, len(rulers_list), 26):
                     groups.append(rulers_list[i:i+26])
                 
-                # Format the output: each group is 26 names (one per line) separated by an empty line.
-                output_text = ""
-                for group in groups:
-                    output_text += "\n".join(group) + "\n\n"
-                
-                st.text_area("Nation Rulers:", value=output_text, height=300)
+                # Display each block in its own text box with a copy button.
+                for idx, group in enumerate(groups):
+                    block_text = "\n".join(group)
+                    # Create a unique ID for the HTML elements so the copy button knows which text to copy.
+                    unique_id = f"cc_textarea_{idx}"
+                    html_block = f"""
+                    <textarea id="{unique_id}" style="width:100%; height:150px;">{block_text}</textarea>
+                    <button onclick="navigator.clipboard.writeText(document.getElementById('{unique_id}').value)">Copy</button>
+                    """
+                    st.markdown(html_block, unsafe_allow_html=True)
             else:
                 st.info("Nation Statistics data not loaded yet. Please download the data first.")
 

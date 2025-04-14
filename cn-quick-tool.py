@@ -295,16 +295,17 @@ def main():
                         else:
                             not_found.append(nid)
                     if ruler_names:
-                        st.markdown("**Ruler Names for the provided Trade Circle ID:**")
-                        # Display each name on a new line.
-                        st.text("\n".join(ruler_names))
+                        # Sort the ruler names alphabetically in a case-insensitive manner.
+                        sorted_names = sorted(ruler_names, key=lambda x: x.lower())
+                        st.markdown("**Ruler Names for the provided Trade Circle ID (alphabetical order):**")
+                        st.text("\n".join(sorted_names))
                     if not_found:
                         st.warning(f"Nation IDs not found in data: {', '.join(not_found)}")
                 else:
                     st.info("Nation Statistics data not loaded yet. Please download the data first.")
             else:
                 st.info("Please enter a Trade Circle ID to convert.")
-
+    
     # -----------------------
     # COLLAPSIBLE SECTION: Carbon Copy Rulers Tool
     # -----------------------

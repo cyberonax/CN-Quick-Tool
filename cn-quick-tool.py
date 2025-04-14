@@ -320,14 +320,13 @@ def main():
                 for idx, group in enumerate(groups):
                     block_text = "\n".join(group)
                     unique_id = f"cc_textarea_{idx}"
-                    html_block = f"""
-                    <div style="margin-bottom: 10px;">
-                        <textarea id="{unique_id}" style="width:100%; height:150px;">{block_text}</textarea>
-                        <br>
-                        <button onclick="navigator.clipboard.writeText(document.getElementById('{unique_id}').value)">Copy</button>
-                    </div>
-                    """
-                    st.components.v1.html(html_block, height=220)
+                    # The inline HTML is dedented so that the text area shows the rulers
+                    # and the copy button correctly copies its contents.
+                    html_block = (
+f"""<textarea id="{unique_id}" style="width:100%; height:150px;">{block_text}</textarea>
+<button style="margin-top: 5px;" onclick="navigator.clipboard.writeText(document.getElementById('{unique_id}').value)">Copy</button>"""
+                    )
+                    st.markdown(html_block, unsafe_allow_html=True)
             else:
                 st.info("Nation Statistics data not loaded yet. Please download the data first.")
 

@@ -321,7 +321,7 @@ def main():
                     unique_id = f"cc_textarea_{idx}"
                     html_block = f"""
                     <div style="margin-bottom: 20px;">
-                      <textarea id="{unique_id}" style="width:100%; height:150px; background-color: #f0f0f0;" readonly="readonly">{block_text}</textarea>
+                      <textarea id="{unique_id}" style="width:100%; height:150px; background-color: black; color: white;" readonly="readonly">{block_text}</textarea>
                       <br>
                       <button onclick="navigator.clipboard.writeText(document.getElementById('{unique_id}').value)" style="margin-top:5px;">Copy</button>
                     </div>

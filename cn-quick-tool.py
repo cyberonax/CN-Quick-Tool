@@ -73,9 +73,7 @@ def load_data():
 # MAIN APP
 # -----------------------
 def main():
-    # Initialize session state flags for collapsible sections if they don't exist
-    if "cse_expanded" not in st.session_state:
-        st.session_state.cse_expanded = False
+    # Initialize session state flags for controlling expander open state
     if "alliance_expanded" not in st.session_state:
         st.session_state.alliance_expanded = False
     if "trade_circle_expanded" not in st.session_state:
@@ -139,7 +137,7 @@ def main():
     # -----------------------
     # COLLAPSIBLE SECTION: Process Comma-Separated Names
     # -----------------------
-    with st.expander("Comma-Separated Name Processor", expanded=st.session_state.cse_expanded):
+    with st.expander("Comma-Separated Name Processor", expanded=False):
         st.markdown(
             """
             Paste a list of names, numbers, or other text below (separated by commas or new lines).
@@ -150,10 +148,9 @@ def main():
             """
         )
         
-        names_input = st.text_area("Enter text", height=100)
+        names_input = st.text_area("Enter text", height=100, key="cse_text")
         
         if names_input:
-            st.session_state.cse_expanded = True  # Keep this section open since a request is processed.
             # Split the input on commas or newlines using regex.
             names_list = [name.strip() for name in re.split(r"[,\n]+", names_input) if name.strip()]
             
@@ -173,7 +170,12 @@ def main():
     # -----------------------
     # COLLAPSIBLE SECTION: Alliance Member Exclusion/Inclusion Tool
     # -----------------------
-    with st.expander("Alliance Member Exclusion/Inclusion Tool", expanded=st.session_state.alliance_expanded):
+    alliance_container = st.empty()
+    if st.session_state.alliance_expanded:
+        alliance_expanded_flag = True
+    else:
+        alliance_expanded_flag = False
+    with alliance_container.expander("Alliance Member Exclusion/Inclusion Tool", expanded=alliance_expanded_flag):
         st.markdown(
             """
             Enter a list of Nation or Ruler Names (one per line) below and select an alliance.
@@ -196,14 +198,12 @@ def main():
             alliance_options = ["Freehold of The Wolves"]
             default_index = 0
 
-        alliance_selected = st.selectbox("Select Alliance", options=alliance_options, index=default_index)
+        alliance_selected = st.selectbox("Select Alliance", options=alliance_options, index=default_index, key="alliance_select")
         
-        # Input for list of nation or ruler names.
-        names_alliance_input = st.text_area("Enter Nation or Ruler Names (one per line)", height=150)
+        names_alliance_input = st.text_area("Enter Nation or Ruler Names (one per line)", height=150, key="alliance_input")
         
         if names_alliance_input:
-            st.session_state.alliance_expanded = True  # Keep this section open due to user input.
-            # Process the input list if provided.
+            st.session_state.alliance_expanded = True  # Set flag so this section stays open.
             name_filters = [n.strip() for n in names_alliance_input.splitlines() if n.strip()]
             lower_filters = [n.lower() for n in name_filters]
         else:
@@ -215,7 +215,6 @@ def main():
             alliance_df = alliance_df[alliance_df["Alliance"] == alliance_selected]
             
             if lower_filters:
-                # Create mask where either the Ruler Name or Nation Name matches an input name (case-insensitive).
                 mask = alliance_df["Ruler Name"].str.lower().isin(lower_filters) | alliance_df["Nation Name"].str.lower().isin(lower_filters)
                 result_not_in_list = alliance_df[~mask].copy()  # Nations in alliance not in the list
                 result_in_list = alliance_df[mask].copy()         # Nations in alliance in your list
@@ -234,7 +233,12 @@ def main():
     # -----------------------
     # COLLAPSIBLE SECTION: Trade Circle ID Generator
     # -----------------------
-    with st.expander("Trade Circle ID Generator", expanded=st.session_state.trade_circle_expanded):
+    trade_container = st.empty()
+    if st.session_state.trade_circle_expanded:
+        trade_expanded_flag = True
+    else:
+        trade_expanded_flag = False
+    with trade_container.expander("Trade Circle ID Generator", expanded=trade_expanded_flag):
         st.markdown(
             """
             Paste a list of Nation or Ruler Names (one per line) below.
@@ -242,11 +246,10 @@ def main():
             ordered from smallest to largest and separated by periods.
             """
         )
-        # Input for list of nation or ruler names.
-        names_trade_input = st.text_area("Enter Nation or Ruler Names (one per line) for Trade Circle ID", height=150)
+        names_trade_input = st.text_area("Enter Nation or Ruler Names (one per line) for Trade Circle ID", height=150, key="trade_input")
         
         if names_trade_input:
-            st.session_state.trade_circle_expanded = True  # Keep this section open since it is processing input.
+            st.session_state.trade_circle_expanded = True  # Keep this section open since input is provided.
             name_list = [n.strip() for n in names_trade_input.splitlines() if n.strip()]
             lower_names = [n.lower() for n in name_list]
         else:
@@ -255,18 +258,14 @@ def main():
         if "df" in st.session_state:
             trade_df = st.session_state.df.copy()
             if lower_names:
-                # Create mask to search for matching Nation or Ruler Names.
                 mask = trade_df["Ruler Name"].str.lower().isin(lower_names) | trade_df["Nation Name"].str.lower().isin(lower_names)
                 matching_df = trade_df[mask].copy()
                 if not matching_df.empty:
-                    # Extract Nation IDs, convert to integers for proper sorting.
                     try:
                         nation_ids = matching_df["Nation ID"].astype(int).tolist()
                     except:
                         nation_ids = matching_df["Nation ID"].tolist()
-                    # Sort the Nation IDs from smallest to largest.
                     nation_ids_sorted = sorted(nation_ids)
-                    # Join the sorted Nation IDs with a period.
                     trade_circle_id = ".".join(str(nid) for nid in nation_ids_sorted)
                     st.markdown("#### Trade Circle ID:")
                     st.code(trade_circle_id)

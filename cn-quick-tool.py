@@ -74,7 +74,7 @@ def load_data():
 # -----------------------
 def main():
     st.set_page_config(layout="wide")
-    st.title("Cyber Nations | Nation Ruler Search")
+    st.title("Cyber Nations | Nation Ruler Search | Quick Tool")
     
     # Brief description under the main title
     st.markdown("This tool helps you simplify returning information from your list of pasted Nation/Ruler Names. Click 'Download Nation Statistics' to proceed.")
@@ -161,6 +161,49 @@ def main():
             st.text_area("Output 1 (each name on a separate line)", value=output1, height=150)
             st.text_area("Output 2 (quoted names with trailing comma)", value=output2, height=150)
             st.text_area("Output 3 (names joined by a comma)", value=output3, height=100)
+    
+    # -----------------------
+    # COLLAPSIBLE SECTION: Alliance Exclusion Tool
+    # -----------------------
+    st.markdown("---")
+    with st.expander("Alliance Exclusion Tool"):
+        st.markdown(
+            """
+            Enter a list of Nation or Ruler Names (one per line) below and select an alliance.
+            This tool will display the nations from the selected alliance that are *not* in your list.
+            
+            If no names are provided, the result will remain blank.
+            """
+        )
+        # Dropdown to select alliance; default is "Freehold of The Wolves".
+        alliance_selected = st.selectbox("Select Alliance", options=["Freehold of The Wolves"], index=0)
+        
+        # Input for list of nation or ruler names.
+        names_alliance_input = st.text_area("Enter Nation or Ruler Names (one per line)", height=150)
+        
+        # Process the input list if provided.
+        if names_alliance_input:
+            name_filters = [n.strip() for n in names_alliance_input.splitlines() if n.strip()]
+            lower_filters = [n.lower() for n in name_filters]
+        else:
+            lower_filters = []
+        
+        if "df" in st.session_state:
+            alliance_df = st.session_state.df.copy()
+            # Filter the data for rows matching the selected alliance.
+            alliance_df = alliance_df[alliance_df["Alliance"] == alliance_selected]
+            
+            if lower_filters:
+                # Filter out rows that have either the Ruler Name or Nation Name present in the input list.
+                mask = alliance_df["Ruler Name"].str.lower().isin(lower_filters) | alliance_df["Nation Name"].str.lower().isin(lower_filters)
+                result_alliance_df = alliance_df[~mask].copy()  # nations in alliance that are not in the list
+            else:
+                result_alliance_df = pd.DataFrame()  # blank result if no names provided
+            
+            st.markdown("#### Nations in alliance not in your list:")
+            st.dataframe(result_alliance_df)
+        else:
+            st.info("Nation Statistics data not loaded yet. Please download the data first.")
 
 if __name__ == "__main__":
     main()

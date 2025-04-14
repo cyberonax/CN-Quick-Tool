@@ -287,9 +287,8 @@ def main():
             """
             Select an alliance to retrieve its list of Nation Rulers.
             
-            The ruler names are displayed one per line and grouped into blocks of 26 names.
-            A visible text box shows the ruler names, and a copy-to-clipboard button (rendered with components.html)
-            will copy the contents of the associated text box.
+            The ruler names are hidden inside a non-visible textarea for copying.
+            A styled, non-editable block is shown below instead.
             """
         )
         # Retrieve alliance options
@@ -314,28 +313,24 @@ def main():
                 rulers_list = sorted(rulers_list, key=str.lower)
                 
                 # Group the rulers into blocks of 26 names per block.
-                groups = [rulers_list[i:i+26] for i in range(0, len(rulers_list), 26)]
+                groups = []
+                for i in range(0, len(rulers_list), 26):
+                    groups.append(rulers_list[i:i+26])
                 
-                # For each group, display a visible text box (using st.markdown with inline HTML)
-                # and then render a copy button via components.html that copies from that text box.
+                # Display each block using a hidden textarea for copying and a visible styled div.
                 for idx, group in enumerate(groups):
                     block_text = "\n".join(group)
                     unique_id = f"cc_textarea_{idx}"
-                    
-                    # Render the visible text box
-                    html_visible = f"""
-                    <textarea id="{unique_id}" style="width:100%; height:150px;">{block_text}</textarea>
-                    """
-                    st.markdown(html_visible, unsafe_allow_html=True)
-                    
-                    # Render the copy button from the second code.
-                    html_copy = f"""
-                    <div style="margin-bottom: 20px;">
-                      <button onclick="navigator.clipboard.writeText(document.getElementById('{unique_id}').value)" 
-                              style="margin-top:5px;">Copy</button>
+                    html_block = f"""
+                    <!-- Hidden textarea for copying -->
+                    <textarea id="{unique_id}_hidden" style="display:none;">{block_text}</textarea>
+                    <!-- Visible non-editable block -->
+                    <div style="width:100%; min-height:150px; background-color:#f0f0f0; border:1px solid #ccc; padding:10px; white-space:pre-wrap; margin-bottom:10px;">
+                      {block_text}
                     </div>
+                    <button onclick="navigator.clipboard.writeText(document.getElementById('{unique_id}_hidden').value)">Copy</button>
                     """
-                    components.html(html_copy, height=50)
+                    st.markdown(html_block, unsafe_allow_html=True)
             else:
                 st.info("Nation Statistics data not loaded yet. Please download the data first.")
 

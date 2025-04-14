@@ -223,7 +223,7 @@ def main():
                     </button>
                     """
                     st.components.v1.html(copy_button_html, height=50)
-                        st.table(alt_df)
+                    st.table(alt_df)
 
     # -----------------------
     # COLLAPSIBLE SECTION: Process Comma-Separated Names

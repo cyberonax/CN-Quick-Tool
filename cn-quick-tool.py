@@ -136,13 +136,20 @@ def main():
                 else:
                     # Calculate the Resource 1+2 column.
                     result_df["Resource 1+2"] = result_df.apply(get_resource_1_2, axis=1)
+                    
                     # Build the Nation Drill Link.
                     result_df["Nation Drill Link"] = (
                         "https://www.cybernations.net/nation_drill_display.asp?Nation_ID=" +
                         result_df["Nation ID"].astype(str)
                     )
-                    # Reorder columns: Nation ID first.
-                    display_df = result_df[["Nation ID", "Ruler Name", "Resource 1+2", "Alliance", "Team", "Nation Drill Link"]]
+                    
+                    # Compute the "Days Old" column based on the "Created" column.
+                    # Convert Created to datetime (errors will result in NaT)
+                    result_df["Created_dt"] = pd.to_datetime(result_df["Created"], errors='coerce')
+                    result_df["Days Old"] = (pd.Timestamp.now() - result_df["Created_dt"]).dt.days
+                    
+                    # Reorder columns: Nation ID, Ruler Name, Resource 1+2, Alliance, Team, Days Old, Nation Drill Link.
+                    display_df = result_df[["Nation ID", "Ruler Name", "Resource 1+2", "Alliance", "Team", "Days Old", "Nation Drill Link"]]
                     
                     st.dataframe(display_df)
                     

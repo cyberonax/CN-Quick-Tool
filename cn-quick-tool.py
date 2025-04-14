@@ -163,9 +163,8 @@ def main():
             st.text_area("Output 3 (names joined by a comma)", value=output3, height=100)
     
     # -----------------------
-    # COLLAPSIBLE SECTION: Alliance Exclusion Tool
+    # COLLAPSIBLE SECTION: Alliance Member Exclusion/Inclusion Tool
     # -----------------------
-    st.markdown("---")
     with st.expander("Alliance Exclusion Tool"):
         st.markdown(
             """
@@ -222,6 +221,50 @@ def main():
             st.dataframe(result_in_list)
         else:
             st.info("Nation Statistics data not loaded yet. Please download the data first.")
+    
+    # -----------------------
+    # COLLAPSIBLE SECTION: Trade Circle ID Generator
+    # -----------------------
+    with st.expander("Trade Circle ID Generator"):
+        st.markdown(
+            """
+            Paste a list of Nation or Ruler Names (one per line) below.
+            This tool will generate a Trade Circle ID by joining the corresponding Nation IDs (from the loaded data) in ascending order.
+
+            **Example:**
+            - Nation ID | Ruler Name  
+              109489    | blackpony  
+              81564     | constablepotato  
+              
+            **Trade Circle ID:** 81564.109489
+            """
+        )
+        trade_names_input = st.text_area("Enter Nation or Ruler Names (one per line)", height=150)
+        
+        if st.button("Generate Trade Circle ID"):
+            if trade_names_input.strip():
+                # Process the input list.
+                trade_names = [n.strip() for n in trade_names_input.splitlines() if n.strip()]
+                lower_trade_names = [n.lower() for n in trade_names]
+                
+                if "df" in st.session_state:
+                    df = st.session_state.df.copy()
+                    # Find rows where either Ruler Name or Nation Name matches one of the input names.
+                    trade_mask = df["Ruler Name"].str.lower().isin(lower_trade_names) | df["Nation Name"].str.lower().isin(lower_trade_names)
+                    trade_df = df[trade_mask].copy()
+                    
+                    if not trade_df.empty:
+                        # Extract Nation IDs, convert to int if necessary, sort them, then join with a period.
+                        nation_ids = trade_df["Nation ID"].astype(int).tolist()
+                        nation_ids = sorted(nation_ids)
+                        trade_circle_id = ".".join(str(nid) for nid in nation_ids)
+                        st.markdown("**Trade Circle ID:** " + trade_circle_id)
+                    else:
+                        st.info("No matching entries found for the provided names.")
+                else:
+                    st.info("Nation Statistics data not loaded yet. Please download the data first.")
+            else:
+                st.info("No names entered. Please paste one or more names.")
 
 if __name__ == "__main__":
     main()

@@ -116,19 +116,17 @@ def main():
     # -----------------------
     with st.expander("Ruler Search Interface", expanded=True):
         st.subheader("Enter Nation or Ruler Names (one per line)")
-        # Save raw input for later processing
         names_input = st.text_area("Paste the names here", height=150)
         
         if st.button("Search", key="ruler_search"):
             if not names_input.strip():
                 st.info("No names entered. Please paste one or more names.")
             else:
-                # Convert input to a list (ignoring extra whitespace and empty lines)
+                # Convert input to a list (ignoring extra whitespace and empty lines) for the primary lookup.
                 filters = [name.strip() for name in names_input.splitlines() if name.strip()]
-                # Convert filters to lowercase for a case-insensitive search.
-                lower_filters = [f.lower() for f in filters]
                 # Create a mask where either the Ruler Name or Nation Name column matches any input.
                 df = st.session_state.df.copy()
+                lower_filters = [f.lower() for f in filters]
                 mask = df["Ruler Name"].str.lower().isin(lower_filters) | df["Nation Name"].str.lower().isin(lower_filters)
                 result_df = df[mask].copy()
                 
@@ -158,33 +156,58 @@ def main():
                     st.download_button("Download Results as CSV", csv, file_name="ruler_search_results.csv", mime="text/csv")
                     
                     # -----------------------
-                    # NEW TABLE: Formatted Ruler Names Structure
+                    # NEW: Alternative Format Output preserving spacing and order of names
                     # -----------------------
-                    st.markdown("#### Formatted Ruler Names Structure")
-                    # Process the raw input preserving group structure (groups separated by blank lines).
-                    groups = [grp.strip().splitlines() for grp in names_input.split("\n\n") if grp.strip()]
-                    processed_groups = []
-                    max_lines = 0
-                    for grp in groups:
-                        lines = []
-                        for line in grp:
-                            line = line.strip()
-                            # Replace unrecognized names ("x") with an empty string.
-                            if line.lower() == "x":
-                                lines.append("")
-                            else:
-                                lines.append(line)
-                        processed_groups.append(lines)
-                        if len(lines) > max_lines:
-                            max_lines = len(lines)
-                    # Pad groups with empty strings so that all groups have the same number of lines.
-                    for grp in processed_groups:
-                        while len(grp) < max_lines:
-                            grp.append("")
-                    # Create DataFrame columns for each line.
-                    columns = [f"Line {i+1}" for i in range(max_lines)]
-                    df_groups = pd.DataFrame(processed_groups, columns=columns)
-                    st.dataframe(df_groups)
+                    st.markdown("### Alternative Format Output")
+                    st.markdown(
+                        """
+                        This output preserves the original grouping and blank lines as entered.
+                        For each non-empty line, if a match is found in the data, the following columns are displayed:
+                        
+                        - Ruler Name  
+                        - Resource 1+2  
+                        - Alliance  
+                        - Team  
+                        - (Empty placeholder column)  
+                        - Nation Drill Link
+                        
+                        Unrecognized names (e.g. "x") will be repeated in all columns.
+                        """
+                    )
+                    # Process the raw input lines preserving blank lines.
+                    raw_lines = names_input.splitlines()
+                    lines_output = []
+                    
+                    # Set up a header (columns separated by tabs)
+                    header = ["Ruler Name", "Resource 1+2", "Alliance", "Team", " ", "Nation Drill Link"]
+                    lines_output.append("\t".join(header))
+                    
+                    for line in raw_lines:
+                        # If line is blank, preserve an empty row.
+                        if line.strip() == "":
+                            lines_output.append("")
+                            continue
+                        lookup_name = line.strip()
+                        # Attempt lookup in the data (case-insensitive exact match against Ruler Name or Nation Name).
+                        temp_df = st.session_state.df.copy()
+                        mask = temp_df["Ruler Name"].str.lower() == lookup_name.lower()
+                        if not mask.any():
+                            mask = temp_df["Nation Name"].str.lower() == lookup_name.lower()
+                        if mask.any():
+                            row = temp_df[mask].iloc[0]
+                            ruler = row["Ruler Name"]
+                            res = get_resource_1_2(row)
+                            alliance = row["Alliance"]
+                            team = row["Team"]
+                            nation_drill = "https://www.cybernations.net/nation_drill_display.asp?Nation_ID=" + str(row["Nation ID"])
+                            line_out = "\t".join([str(ruler), str(res), str(alliance), str(team), "", nation_drill])
+                        else:
+                            # For unrecognized names, repeat the lookup text in all columns.
+                            line_out = "\t".join([lookup_name] * 5 + [lookup_name])
+                        lines_output.append(line_out)
+                    
+                    alt_table_text = "\n".join(lines_output)
+                    st.text_area("Alternative Format Output", value=alt_table_text, height=300)
     
     # -----------------------
     # COLLAPSIBLE SECTION: Process Comma-Separated Names
@@ -231,8 +254,8 @@ def main():
         )
         names_alliance_input = st.text_area("Enter Nation or Ruler Names (one per line)", height=150, key="alliance_input", on_change=keep_alliance_open)
         if "df" in st.session_state:
-            df = st.session_state.df.copy()
-            alliance_options = sorted(df["Alliance"].dropna().unique().tolist())
+            temp_df = st.session_state.df.copy()
+            alliance_options = sorted(temp_df["Alliance"].dropna().unique().tolist())
             default_index = alliance_options.index("Freehold of The Wolves") if "Freehold of The Wolves" in alliance_options else 0
         else:
             alliance_options = ["Freehold of The Wolves"]

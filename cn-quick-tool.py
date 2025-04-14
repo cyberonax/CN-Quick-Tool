@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import requests
 import zipfile
@@ -312,39 +313,20 @@ def main():
                 rulers_list = sorted(rulers_list, key=str.lower)
                 
                 # Group the rulers into blocks of 26 names per block.
-                groups = []
-                for i in range(0, len(rulers_list), 26):
-                    groups.append(rulers_list[i:i+26])
+                groups = [rulers_list[i:i+26] for i in range(0, len(rulers_list), 26)]
                 
-                # Insert a JavaScript function for copying text
-                st.markdown("""
-                <script>
-                function copyTextFunction(textareaID, buttonID) {
-                    var copyText = document.getElementById(textareaID);
-                    navigator.clipboard.writeText(copyText.value).then(function() {
-                        var btn = document.getElementById(buttonID);
-                        var originalText = btn.innerHTML;
-                        btn.innerHTML = "Copied!";
-                        setTimeout(function(){ btn.innerHTML = originalText; }, 2000);
-                    });
-                }
-                </script>
-                """, unsafe_allow_html=True)
-                
-                # Display each block in its own text box with a copy button.
+                # Display each block in its own text box with a copy button using components.html
                 for idx, group in enumerate(groups):
                     block_text = "\n".join(group)
-                    # Create unique IDs for the textarea and its copy button.
                     unique_id = f"cc_textarea_{idx}"
-                    button_id = f"copy_{unique_id}"
                     html_block = f"""
-                    <div style="margin-bottom:1em;">
-                        <textarea id="{unique_id}" style="width:100%; height:150px;">{block_text}</textarea>
-                        <br>
-                        <button id="{button_id}" onclick="copyTextFunction('{unique_id}','{button_id}')">Copy</button>
+                    <div style="margin-bottom: 20px;">
+                      <textarea id="{unique_id}" style="width:100%; height:150px; background-color: #f0f0f0;" readonly="readonly">{block_text}</textarea>
+                      <br>
+                      <button onclick="navigator.clipboard.writeText(document.getElementById('{unique_id}').value)" style="margin-top:5px;">Copy</button>
                     </div>
                     """
-                    st.markdown(html_block, unsafe_allow_html=True)
+                    components.html(html_block, height=200)
             else:
                 st.info("Nation Statistics data not loaded yet. Please download the data first.")
 

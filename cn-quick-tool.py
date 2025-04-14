@@ -150,6 +150,8 @@ def main():
                     csv = display_df.to_csv(index=False)
                     st.download_button("Download Results as CSV", csv, file_name="ruler_search_results.csv", mime="text/csv")
     
+    st.markdown("---")
+    
     # -----------------------
     # COLLAPSIBLE SECTION: Process Comma-Separated Names
     # -----------------------
@@ -276,8 +278,6 @@ def main():
                     st.info("Please enter one or more Nation or Ruler Names to generate a Trade Circle ID.")
             else:
                 st.info("Nation Statistics data not loaded yet. Please download the data first.")
-    
-    st.markdown("---")
     
     # -----------------------
     # COLLAPSIBLE SECTION: Carbon Copy Rulers Tool

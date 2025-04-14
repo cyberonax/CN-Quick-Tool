@@ -250,6 +250,7 @@ def main():
     # -----------------------
     alliance_container = st.empty()
     alliance_expanded_flag = st.session_state.alliance_expanded
+    
     with alliance_container.expander("Alliance Member Exclusion/Inclusion Tool", expanded=alliance_expanded_flag):
         st.markdown(
             """
@@ -291,10 +292,26 @@ def main():
                     result_not_in_list = pd.DataFrame()
                     result_in_list = pd.DataFrame()
                 
-                st.markdown("#### Nations in alliance not in your list:")
+            if "df" in st.session_state:
+                alliance_df = st.session_state.df.copy()
+                alliance_df = alliance_df[alliance_df["Alliance"] == alliance_selected]
+                if lower_filters:
+                    mask = alliance_df["Ruler Name"].str.lower().isin(lower_filters) | alliance_df["Nation Name"].str.lower().isin(lower_filters)
+                    result_not_in_list = alliance_df[~mask].copy()
+                    result_in_list = alliance_df[mask].copy()
+                else:
+                    result_not_in_list = pd.DataFrame()
+                    result_in_list = pd.DataFrame()
+                
+                # Tally the alliance members count.
+                total_alliance_members = len(alliance_df)
+                count_in_list = len(result_in_list)
+                count_not_in_list = len(result_not_in_list)
+                
+                st.markdown(f"#### Nations in alliance not in your list: {count_not_in_list} / {total_alliance_members}")
                 st.dataframe(result_not_in_list)
                 
-                st.markdown("#### Nations in alliance in your list:")
+                st.markdown(f"#### Nations in alliance in your list: {count_in_list} / {total_alliance_members}")
                 st.dataframe(result_in_list)
             else:
                 st.info("Nation Statistics data not loaded yet. Please download the data first.")

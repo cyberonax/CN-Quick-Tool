@@ -316,17 +316,26 @@ def main():
                 groups = [rulers_list[i:i+26] for i in range(0, len(rulers_list), 26)]
                 
                 # Display each block in its own text box with a copy button.
+                # Adding a <style> block to force disabled textareas to have a grey background.
+                css_style = """
+                <style>
+                textarea[disabled] {
+                    background-color: #f0f0f0 !important;
+                }
+                </style>
+                """
                 for idx, group in enumerate(groups):
                     block_text = "\n".join(group)
                     unique_id = f"cc_textarea_{idx}"
                     html_block = f"""
+                    {css_style}
                     <div style="margin-bottom: 20px;">
-                      <textarea id="{unique_id}" style="width:100%; height:150px; background-color: #f0f0f0;" readonly="readonly">{block_text}</textarea>
+                      <textarea id="{unique_id}" style="width:100%; height:150px;" disabled>{block_text}</textarea>
                       <br>
                       <button onclick="navigator.clipboard.writeText(document.getElementById('{unique_id}').value)" style="margin-top:5px;">Copy</button>
                     </div>
                     """
-                    components.html(html_block, height=200)
+                    components.html(html_block, height=220)
             else:
                 st.info("Nation Statistics data not loaded yet. Please download the data first.")
 

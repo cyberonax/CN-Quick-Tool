@@ -165,6 +165,7 @@ def main():
     # -----------------------
     # COLLAPSIBLE SECTION: Alliance Member Exclusion/Inclusion Tool
     # -----------------------
+    st.markdown("---")
     with st.expander("Alliance Exclusion Tool"):
         st.markdown(
             """
@@ -225,6 +226,7 @@ def main():
     # -----------------------
     # COLLAPSIBLE SECTION: Trade Circle ID Generator
     # -----------------------
+    st.markdown("---")
     with st.expander("Trade Circle ID Generator"):
         st.markdown(
             """

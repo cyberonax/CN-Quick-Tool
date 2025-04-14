@@ -272,7 +272,39 @@ def main():
                     st.info("Please enter one or more Nation or Ruler Names to generate a Trade Circle ID.")
             else:
                 st.info("Nation Statistics data not loaded yet. Please download the data first.")
-    
+
+        # -----------------------
+        # NEW SUBSECTION: Convert Trade Circle ID to Ruler Names
+        # -----------------------
+        st.markdown("#### Convert Trade Circle ID to Ruler Names")
+        trade_circle_id_input = st.text_input("Enter a Trade Circle ID (e.g., 1001.1003.1007)", key="trade_circle_id_convert")
+        if st.button("Convert", key="trade_convert"):
+            if trade_circle_id_input:
+                # Split the Trade Circle ID string by period to get individual Nation IDs.
+                nation_id_list = [tid.strip() for tid in trade_circle_id_input.split('.') if tid.strip()]
+                ruler_names = []
+                not_found = []
+                if "df" in st.session_state:
+                    data_df = st.session_state.df.copy()
+                    for nid in nation_id_list:
+                        # Compare the Nation ID as a string.
+                        match = data_df[data_df["Nation ID"].astype(str) == nid]
+                        if not match.empty:
+                            # Assuming Nation IDs are unique; get the first matching Ruler Name.
+                            ruler_names.append(match.iloc[0]["Ruler Name"])
+                        else:
+                            not_found.append(nid)
+                    if ruler_names:
+                        st.markdown("**Ruler Names for the provided Trade Circle ID:**")
+                        # Display each name on a new line.
+                        st.text("\n".join(ruler_names))
+                    if not_found:
+                        st.warning(f"Nation IDs not found in data: {', '.join(not_found)}")
+                else:
+                    st.info("Nation Statistics data not loaded yet. Please download the data first.")
+            else:
+                st.info("Please enter a Trade Circle ID to convert.")
+
     # -----------------------
     # COLLAPSIBLE SECTION: Carbon Copy Rulers Tool
     # -----------------------

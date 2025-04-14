@@ -78,6 +78,8 @@ def main():
         st.session_state.alliance_expanded = False
     if "trade_circle_expanded" not in st.session_state:
         st.session_state.trade_circle_expanded = False
+    if "cse_expanded" not in st.session_state:
+        st.session_state.cse_expanded = False
 
     st.set_page_config(layout="wide")
     st.title("Cyber Nations | Nation Ruler Search | Quick Tool")
@@ -137,7 +139,7 @@ def main():
     # -----------------------
     # COLLAPSIBLE SECTION: Process Comma-Separated Names
     # -----------------------
-    with st.expander("Comma-Separated Name Processor", expanded=False):
+    with st.expander("Comma-Separated Name Processor", expanded=st.session_state.cse_expanded):
         st.markdown(
             """
             Paste a list of names, numbers, or other text below (separated by commas or new lines).
@@ -149,23 +151,21 @@ def main():
         )
         
         names_input = st.text_area("Enter text", height=100, key="cse_text")
-        
-        if names_input:
-            # Split the input on commas or newlines using regex.
-            names_list = [name.strip() for name in re.split(r"[,\n]+", names_input) if name.strip()]
-            
-            # Output 1: Each name on its own separate line.
-            output1 = "\n".join(names_list)
-            
-            # Output 2: Each name on its separate line, wrapped in quotes and appended with a comma.
-            output2 = "\n".join([f'"{name}",' for name in names_list])
-            
-            # Output 3: Names joined with a comma and a space.
-            output3 = ", ".join(names_list)
-            
-            st.text_area("Output 1 (each name on a separate line)", value=output1, height=150)
-            st.text_area("Output 2 (quoted names with trailing comma)", value=output2, height=150)
-            st.text_area("Output 3 (names joined by a comma)", value=output3, height=100)
+        if st.button("Generate", key="cse_generate"):
+            st.session_state.cse_expanded = True  # Keep section open after generation.
+            if names_input:
+                # Split the input on commas or newlines using regex.
+                names_list = [name.strip() for name in re.split(r"[,\n]+", names_input) if name.strip()]
+                # Output 1: Each name on its own separate line.
+                output1 = "\n".join(names_list)
+                # Output 2: Each name on its separate line, wrapped in quotes and appended with a comma.
+                output2 = "\n".join([f'"{name}",' for name in names_list])
+                # Output 3: Names joined with a comma and a space.
+                output3 = ", ".join(names_list)
+                
+                st.text_area("Output 1 (each name on a separate line)", value=output1, height=150)
+                st.text_area("Output 2 (quoted names with trailing comma)", value=output2, height=150)
+                st.text_area("Output 3 (names joined by a comma)", value=output3, height=100)
     
     # -----------------------
     # COLLAPSIBLE SECTION: Alliance Member Exclusion/Inclusion Tool
@@ -190,45 +190,40 @@ def main():
         # Check if the data is loaded to extract alliance options
         if "df" in st.session_state:
             df = st.session_state.df.copy()
-            # Get a sorted list of unique alliances, dropping any missing values.
             alliance_options = sorted(df["Alliance"].dropna().unique().tolist())
-            # Use 'Freehold of The Wolves' as default if present.
             default_index = alliance_options.index("Freehold of The Wolves") if "Freehold of The Wolves" in alliance_options else 0
         else:
             alliance_options = ["Freehold of The Wolves"]
             default_index = 0
 
         alliance_selected = st.selectbox("Select Alliance", options=alliance_options, index=default_index, key="alliance_select")
-        
         names_alliance_input = st.text_area("Enter Nation or Ruler Names (one per line)", height=150, key="alliance_input")
-        
-        if names_alliance_input:
-            st.session_state.alliance_expanded = True  # Set flag so this section stays open.
-            name_filters = [n.strip() for n in names_alliance_input.splitlines() if n.strip()]
-            lower_filters = [n.lower() for n in name_filters]
-        else:
-            lower_filters = []
-        
-        if "df" in st.session_state:
-            alliance_df = st.session_state.df.copy()
-            # Filter the data for rows matching the selected alliance.
-            alliance_df = alliance_df[alliance_df["Alliance"] == alliance_selected]
-            
-            if lower_filters:
-                mask = alliance_df["Ruler Name"].str.lower().isin(lower_filters) | alliance_df["Nation Name"].str.lower().isin(lower_filters)
-                result_not_in_list = alliance_df[~mask].copy()  # Nations in alliance not in the list
-                result_in_list = alliance_df[mask].copy()         # Nations in alliance in your list
+        if st.button("Search", key="alliance_generate"):
+            st.session_state.alliance_expanded = True  # Keep this section open after generation.
+            if names_alliance_input:
+                name_filters = [n.strip() for n in names_alliance_input.splitlines() if n.strip()]
+                lower_filters = [n.lower() for n in name_filters]
             else:
-                result_not_in_list = pd.DataFrame()  # Blank result if no names provided.
-                result_in_list = pd.DataFrame()
+                lower_filters = []
             
-            st.markdown("#### Nations in alliance not in your list:")
-            st.dataframe(result_not_in_list)
-            
-            st.markdown("#### Nations in alliance in your list:")
-            st.dataframe(result_in_list)
-        else:
-            st.info("Nation Statistics data not loaded yet. Please download the data first.")
+            if "df" in st.session_state:
+                alliance_df = st.session_state.df.copy()
+                alliance_df = alliance_df[alliance_df["Alliance"] == alliance_selected]
+                if lower_filters:
+                    mask = alliance_df["Ruler Name"].str.lower().isin(lower_filters) | alliance_df["Nation Name"].str.lower().isin(lower_filters)
+                    result_not_in_list = alliance_df[~mask].copy()  # Nations in alliance not in the list
+                    result_in_list = alliance_df[mask].copy()         # Nations in alliance in your list
+                else:
+                    result_not_in_list = pd.DataFrame()  # Blank result if no names provided.
+                    result_in_list = pd.DataFrame()
+                
+                st.markdown("#### Nations in alliance not in your list:")
+                st.dataframe(result_not_in_list)
+                
+                st.markdown("#### Nations in alliance in your list:")
+                st.dataframe(result_in_list)
+            else:
+                st.info("Nation Statistics data not loaded yet. Please download the data first.")
     
     # -----------------------
     # COLLAPSIBLE SECTION: Trade Circle ID Generator
@@ -247,34 +242,34 @@ def main():
             """
         )
         names_trade_input = st.text_area("Enter Nation or Ruler Names (one per line) for Trade Circle ID", height=150, key="trade_input")
-        
-        if names_trade_input:
-            st.session_state.trade_circle_expanded = True  # Keep this section open since input is provided.
-            name_list = [n.strip() for n in names_trade_input.splitlines() if n.strip()]
-            lower_names = [n.lower() for n in name_list]
-        else:
-            lower_names = []
-        
-        if "df" in st.session_state:
-            trade_df = st.session_state.df.copy()
-            if lower_names:
-                mask = trade_df["Ruler Name"].str.lower().isin(lower_names) | trade_df["Nation Name"].str.lower().isin(lower_names)
-                matching_df = trade_df[mask].copy()
-                if not matching_df.empty:
-                    try:
-                        nation_ids = matching_df["Nation ID"].astype(int).tolist()
-                    except:
-                        nation_ids = matching_df["Nation ID"].tolist()
-                    nation_ids_sorted = sorted(nation_ids)
-                    trade_circle_id = ".".join(str(nid) for nid in nation_ids_sorted)
-                    st.markdown("#### Trade Circle ID:")
-                    st.code(trade_circle_id)
-                else:
-                    st.info("No matching Nation or Ruler Names found in the data.")
+        if st.button("Generate", key="trade_generate"):
+            st.session_state.trade_circle_expanded = True  # Keep this section open after generation.
+            if names_trade_input:
+                name_list = [n.strip() for n in names_trade_input.splitlines() if n.strip()]
+                lower_names = [n.lower() for n in name_list]
             else:
-                st.info("Please enter one or more Nation or Ruler Names to generate a Trade Circle ID.")
-        else:
-            st.info("Nation Statistics data not loaded yet. Please download the data first.")
+                lower_names = []
+            
+            if "df" in st.session_state:
+                trade_df = st.session_state.df.copy()
+                if lower_names:
+                    mask = trade_df["Ruler Name"].str.lower().isin(lower_names) | trade_df["Nation Name"].str.lower().isin(lower_names)
+                    matching_df = trade_df[mask].copy()
+                    if not matching_df.empty:
+                        try:
+                            nation_ids = matching_df["Nation ID"].astype(int).tolist()
+                        except:
+                            nation_ids = matching_df["Nation ID"].tolist()
+                        nation_ids_sorted = sorted(nation_ids)
+                        trade_circle_id = ".".join(str(nid) for nid in nation_ids_sorted)
+                        st.markdown("#### Trade Circle ID:")
+                        st.code(trade_circle_id)
+                    else:
+                        st.info("No matching Nation or Ruler Names found in the data.")
+                else:
+                    st.info("Please enter one or more Nation or Ruler Names to generate a Trade Circle ID.")
+            else:
+                st.info("Nation Statistics data not loaded yet. Please download the data first.")
 
 if __name__ == "__main__":
     main()

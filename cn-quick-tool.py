@@ -150,8 +150,6 @@ def main():
                     csv = display_df.to_csv(index=False)
                     st.download_button("Download Results as CSV", csv, file_name="ruler_search_results.csv", mime="text/csv")
     
-    st.markdown("---")
-    
     # -----------------------
     # COLLAPSIBLE SECTION: Process Comma-Separated Names
     # -----------------------

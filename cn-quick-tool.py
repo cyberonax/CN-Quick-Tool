@@ -100,11 +100,10 @@ def main():
     st.set_page_config(layout="wide")
     st.title("Cyber Nations | Nation Ruler Search | Quick Tool")
     
-    # Brief description under the main title
-    st.markdown("This tool helps you simplify returning information from your list of pasted Nation/Ruler Names. Click 'Download Nation Statistics' to proceed.")
+    st.markdown("This tool simplifies returning information from your list of pasted Nation/Ruler Names.")
     
-    # Section: Download Nation Statistics
-    if st.button("Download Nation Statistics"):
+    # Auto-download Nation Statistics data on app load.
+    if "df" not in st.session_state:
         with st.spinner("Loading data..."):
             df = load_data()
         if df is not None:
@@ -112,22 +111,23 @@ def main():
         else:
             st.error("Failed to load data.")
     
-    # Section: Ruler Search Interface
-    if "df" in st.session_state:
-        df = st.session_state.df.copy()
-        
+    # -----------------------
+    # COLLAPSIBLE SECTION: Ruler Search Interface
+    # -----------------------
+    with st.expander("Ruler Search Interface", expanded=True):
         st.subheader("Enter Nation or Ruler Names (one per line)")
         names_input = st.text_area("Paste the names here", height=150)
         
-        if st.button("Search"):
-            # Convert input to a list (ignoring extra whitespace and empty lines)
-            filters = [name.strip() for name in names_input.splitlines() if name.strip()]
-            if not filters:
+        if st.button("Search", key="ruler_search"):
+            if not names_input.strip():
                 st.info("No names entered. Please paste one or more names.")
             else:
+                # Convert input to a list (ignoring extra whitespace and empty lines)
+                filters = [name.strip() for name in names_input.splitlines() if name.strip()]
                 # Convert filters to lowercase for a case-insensitive search.
                 lower_filters = [f.lower() for f in filters]
                 # Create a mask where either the Ruler Name or Nation Name column matches any input.
+                df = st.session_state.df.copy()
                 mask = df["Ruler Name"].str.lower().isin(lower_filters) | df["Nation Name"].str.lower().isin(lower_filters)
                 result_df = df[mask].copy()
                 
@@ -169,13 +169,9 @@ def main():
         if st.button("Generate", key="cse_generate"):
             st.session_state.cse_expanded = True  # Ensure this section stays open.
             if names_input:
-                # Split the input on commas or newlines using regex.
                 names_list = [name.strip() for name in re.split(r"[,\n]+", names_input) if name.strip()]
-                # Output 1: Each name on its own separate line.
                 output1 = "\n".join(names_list)
-                # Output 2: Each name on its separate line, wrapped in quotes and appended with a comma.
                 output2 = "\n".join([f'"{name}",' for name in names_list])
-                # Output 3: Names joined with a comma and a space.
                 output3 = ", ".join(names_list)
                 
                 st.text_area("Output 1 (each name on a separate line)", value=output1, height=150)
@@ -210,7 +206,7 @@ def main():
 
         alliance_selected = st.selectbox("Select Alliance", options=alliance_options, index=default_index, key="alliance_select")
         if st.button("Search", key="alliance_generate"):
-            st.session_state.alliance_expanded = True  # Keep this section open after generation.
+            st.session_state.alliance_expanded = True
             if names_alliance_input:
                 name_filters = [n.strip() for n in names_alliance_input.splitlines() if n.strip()]
                 lower_filters = [n.lower() for n in name_filters]
@@ -222,10 +218,10 @@ def main():
                 alliance_df = alliance_df[alliance_df["Alliance"] == alliance_selected]
                 if lower_filters:
                     mask = alliance_df["Ruler Name"].str.lower().isin(lower_filters) | alliance_df["Nation Name"].str.lower().isin(lower_filters)
-                    result_not_in_list = alliance_df[~mask].copy()  # Nations in alliance not in the list
-                    result_in_list = alliance_df[mask].copy()         # Nations in alliance in your list
+                    result_not_in_list = alliance_df[~mask].copy()
+                    result_in_list = alliance_df[mask].copy()
                 else:
-                    result_not_in_list = pd.DataFrame()  # Blank result if no names provided.
+                    result_not_in_list = pd.DataFrame()
                     result_in_list = pd.DataFrame()
                 
                 st.markdown("#### Nations in alliance not in your list:")
@@ -251,7 +247,7 @@ def main():
         )
         names_trade_input = st.text_area("Enter Nation or Ruler Names (one per line) for Trade Circle ID", height=150, key="trade_input", on_change=keep_trade_open)
         if st.button("Generate", key="trade_generate"):
-            st.session_state.trade_circle_expanded = True  # Keep this section open after generation.
+            st.session_state.trade_circle_expanded = True
             if names_trade_input:
                 name_list = [n.strip() for n in names_trade_input.splitlines() if n.strip()]
                 lower_names = [n.lower() for n in name_list]
@@ -291,7 +287,6 @@ def main():
             Each block is presented in its own text box with a copy-to-clipboard button.
             """
         )
-        # Retrieve alliance options
         if "df" in st.session_state:
             cc_df = st.session_state.df.copy()
             alliance_options = sorted(cc_df["Alliance"].dropna().unique().tolist())
@@ -302,20 +297,17 @@ def main():
 
         alliance_selected_cc = st.selectbox("Select Alliance", options=alliance_options, index=default_index, key="alliance_select_cc")
         if st.button("Generate", key="cc_generate", on_click=keep_cc_open):
-            st.session_state.cc_expanded = True  # Ensure the section remains open after generation.
+            st.session_state.cc_expanded = True
             if "df" in st.session_state:
                 cc_df = st.session_state.df.copy()
-                # Filter by the selected alliance
                 cc_df = cc_df[cc_df["Alliance"] == alliance_selected_cc]
-                # Retrieve the list of Ruler Names (non-empty) and sort them.
                 rulers_list = cc_df["Ruler Name"].dropna().tolist()
                 rulers_list = [ruler.strip() for ruler in rulers_list if ruler.strip()]
                 rulers_list = sorted(rulers_list, key=str.lower)
                 
-                # Group the rulers into blocks of 26 names per block.
                 groups = [rulers_list[i:i+26] for i in range(0, len(rulers_list), 26)]
                 
-                # Create 3 columns for layout.
+                # Arrange boxes in 3 columns.
                 columns = st.columns(3)
                 for idx, group in enumerate(groups):
                     block_text = "\n".join(group)

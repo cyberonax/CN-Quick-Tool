@@ -273,8 +273,6 @@ def main():
             else:
                 st.info("Nation Statistics data not loaded yet. Please download the data first.")
     
-    st.markdown("---")
-    
     # -----------------------
     # COLLAPSIBLE SECTION: Carbon Copy Rulers Tool
     # -----------------------

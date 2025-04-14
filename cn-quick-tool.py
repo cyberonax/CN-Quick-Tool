@@ -156,12 +156,6 @@ def main():
                     st.markdown(
                         """
                         This table preserves the original grouping and blank lines as entered.
-                        For each non-empty line:
-                        
-                        - If a match is found (using case–insensitive exact matching against Ruler or Nation Name), the following columns are displayed:
-                          —— | Ruler Name | Resource 1+2 | Alliance | Team | Days Old | Nation Drill Link | ——
-                        
-                        - If no match is found, the input text is repeated in every column.
                         Blank lines are preserved as empty rows.
                         """
                     )

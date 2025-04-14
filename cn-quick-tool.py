@@ -73,6 +73,14 @@ def load_data():
 # MAIN APP
 # -----------------------
 def main():
+    # Initialize session state flags for collapsible sections if they don't exist
+    if "cse_expanded" not in st.session_state:
+        st.session_state.cse_expanded = False
+    if "alliance_expanded" not in st.session_state:
+        st.session_state.alliance_expanded = False
+    if "trade_circle_expanded" not in st.session_state:
+        st.session_state.trade_circle_expanded = False
+
     st.set_page_config(layout="wide")
     st.title("Cyber Nations | Nation Ruler Search | Quick Tool")
     
@@ -131,8 +139,7 @@ def main():
     # -----------------------
     # COLLAPSIBLE SECTION: Process Comma-Separated Names
     # -----------------------
-    st.markdown("### Other Tools")
-    with st.expander("Comma-Separated Name Processor", expanded=True):
+    with st.expander("Comma-Separated Name Processor", expanded=st.session_state.cse_expanded):
         st.markdown(
             """
             Paste a list of names, numbers, or other text below (separated by commas or new lines).
@@ -146,6 +153,7 @@ def main():
         names_input = st.text_area("Enter text", height=100)
         
         if names_input:
+            st.session_state.cse_expanded = True  # Keep this section open since a request is processed.
             # Split the input on commas or newlines using regex.
             names_list = [name.strip() for name in re.split(r"[,\n]+", names_input) if name.strip()]
             
@@ -165,7 +173,7 @@ def main():
     # -----------------------
     # COLLAPSIBLE SECTION: Alliance Member Exclusion/Inclusion Tool
     # -----------------------
-    with st.expander("Alliance Member Exclusion/Inclusion Tool", expanded=True):
+    with st.expander("Alliance Member Exclusion/Inclusion Tool", expanded=st.session_state.alliance_expanded):
         st.markdown(
             """
             Enter a list of Nation or Ruler Names (one per line) below and select an alliance.
@@ -193,8 +201,9 @@ def main():
         # Input for list of nation or ruler names.
         names_alliance_input = st.text_area("Enter Nation or Ruler Names (one per line)", height=150)
         
-        # Process the input list if provided.
         if names_alliance_input:
+            st.session_state.alliance_expanded = True  # Keep this section open due to user input.
+            # Process the input list if provided.
             name_filters = [n.strip() for n in names_alliance_input.splitlines() if n.strip()]
             lower_filters = [n.lower() for n in name_filters]
         else:
@@ -225,7 +234,7 @@ def main():
     # -----------------------
     # COLLAPSIBLE SECTION: Trade Circle ID Generator
     # -----------------------
-    with st.expander("Trade Circle ID Generator", expanded=True):
+    with st.expander("Trade Circle ID Generator", expanded=st.session_state.trade_circle_expanded):
         st.markdown(
             """
             Paste a list of Nation or Ruler Names (one per line) below.
@@ -237,6 +246,7 @@ def main():
         names_trade_input = st.text_area("Enter Nation or Ruler Names (one per line) for Trade Circle ID", height=150)
         
         if names_trade_input:
+            st.session_state.trade_circle_expanded = True  # Keep this section open since it is processing input.
             name_list = [n.strip() for n in names_trade_input.splitlines() if n.strip()]
             lower_names = [n.lower() for n in name_list]
         else:

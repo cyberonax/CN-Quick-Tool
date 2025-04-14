@@ -129,11 +129,16 @@ def main():
     # -----------------------
     # COLLAPSIBLE SECTION: Process Comma-Separated Names
     # -----------------------
-    st.markdown(f"### Other Tools")
+    st.markdown("### Other Tools")
     with st.expander("Comma-Separated Name Processor"):
         st.markdown(
-            "Paste a list of names, numbers, or other text below (separated by commas or new lines). "
-            "Output 1 will show the names on separate lines, Output 2 will show each name wrapped in quotes with a trailing comma, and Output 3 will show the names joined by a comma."
+            """
+            Paste a list of names, numbers, or other text below (separated by commas or new lines).
+
+            - **Output 1:** Shows the names on separate lines.
+            - **Output 2:** Shows each name wrapped in quotes with a trailing comma.
+            - **Output 3:** Shows the names joined by a comma.
+            """
         )
         
         names_input = st.text_area("Enter text", height=100)

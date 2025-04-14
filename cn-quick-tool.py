@@ -159,7 +159,6 @@ def main():
             - **Output 3:** Shows the names joined by a comma.
             """
         )
-        # on_change callback sets the state when the user interacts with the text area.
         names_input = st.text_area("Enter text", height=100, key="cse_text", on_change=keep_cse_open)
         if st.button("Generate", key="cse_generate"):
             st.session_state.cse_expanded = True  # Ensure this section stays open.
@@ -194,9 +193,7 @@ def main():
             If no names are provided, both results will remain blank.
             """
         )
-        # Use on_change callback on the text area to set the expanded flag without a visible checkbox.
         names_alliance_input = st.text_area("Enter Nation or Ruler Names (one per line)", height=150, key="alliance_input", on_change=keep_alliance_open)
-        # Check if the data is loaded to extract alliance options
         if "df" in st.session_state:
             df = st.session_state.df.copy()
             alliance_options = sorted(df["Alliance"].dropna().unique().tolist())
@@ -273,6 +270,54 @@ def main():
                         st.info("No matching Nation or Ruler Names found in the data.")
                 else:
                     st.info("Please enter one or more Nation or Ruler Names to generate a Trade Circle ID.")
+            else:
+                st.info("Nation Statistics data not loaded yet. Please download the data first.")
+    
+    st.markdown("---")
+    
+    # -----------------------
+    # COLLAPSIBLE SECTION: Carbon Copy Rulers Tool
+    # -----------------------
+    with st.expander("Carbon Copy Rulers Tool"):
+        st.markdown(
+            """
+            Select an alliance to retrieve its list of Nation Rulers.
+            
+            The ruler names are displayed one per line and grouped into blocks of 26 names,
+            with an empty line separating each block.
+            """
+        )
+        # Retrieve alliance options
+        if "df" in st.session_state:
+            df = st.session_state.df.copy()
+            alliance_options = sorted(df["Alliance"].dropna().unique().tolist())
+            default_index = alliance_options.index("Freehold of The Wolves") if "Freehold of The Wolves" in alliance_options else 0
+        else:
+            alliance_options = ["Freehold of The Wolves"]
+            default_index = 0
+
+        alliance_selected_cc = st.selectbox("Select Alliance", options=alliance_options, index=default_index, key="alliance_select_cc")
+        if st.button("Load Nation Rulers for Selected Alliance", key="cc_generate"):
+            if "df" in st.session_state:
+                cc_df = st.session_state.df.copy()
+                # Filter by the selected alliance
+                cc_df = cc_df[cc_df["Alliance"] == alliance_selected_cc]
+                # Retrieve the list of Ruler Names (non-empty) and sort them.
+                rulers_list = cc_df["Ruler Name"].dropna().tolist()
+                rulers_list = [ruler.strip() for ruler in rulers_list if ruler.strip()]
+                rulers_list = sorted(rulers_list, key=str.lower)
+                
+                # Group the rulers into blocks of 26 per block.
+                groups = []
+                for i in range(0, len(rulers_list), 26):
+                    groups.append(rulers_list[i:i+26])
+                
+                # Format the output: each group is 26 names (one per line) separated by an empty line.
+                output_text = ""
+                for group in groups:
+                    output_text += "\n".join(group) + "\n\n"
+                
+                st.text_area("Nation Rulers:", value=output_text, height=300)
             else:
                 st.info("Nation Statistics data not loaded yet. Please download the data first.")
 

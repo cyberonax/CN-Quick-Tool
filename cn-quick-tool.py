@@ -175,8 +175,18 @@ def main():
             If no names are provided, the result will remain blank.
             """
         )
-        # Dropdown to select alliance; default is "Freehold of The Wolves".
-        alliance_selected = st.selectbox("Select Alliance", options=["Freehold of The Wolves"], index=0)
+        # Check if the data is loaded to extract alliance options
+        if "df" in st.session_state:
+            df = st.session_state.df.copy()
+            # Get a sorted list of unique alliances, dropping any missing values.
+            alliance_options = sorted(df["Alliance"].dropna().unique().tolist())
+            # Use 'Freehold of The Wolves' as default if present.
+            default_index = alliance_options.index("Freehold of The Wolves") if "Freehold of The Wolves" in alliance_options else 0
+        else:
+            alliance_options = ["Freehold of The Wolves"]
+            default_index = 0
+
+        alliance_selected = st.selectbox("Select Alliance", options=alliance_options, index=default_index)
         
         # Input for list of nation or ruler names.
         names_alliance_input = st.text_area("Enter Nation or Ruler Names (one per line)", height=150)

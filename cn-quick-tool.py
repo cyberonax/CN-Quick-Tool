@@ -315,7 +315,8 @@ def main():
                 # Group the rulers into blocks of 26 names per block.
                 groups = [rulers_list[i:i+26] for i in range(0, len(rulers_list), 26)]
                 
-                # Display each block in its own text box with a copy button.
+                # Create 3 columns for layout.
+                columns = st.columns(3)
                 for idx, group in enumerate(groups):
                     block_text = "\n".join(group)
                     unique_id = f"cc_textarea_{idx}"
@@ -326,7 +327,8 @@ def main():
                       <button onclick="navigator.clipboard.writeText(document.getElementById('{unique_id}').value)" style="margin-top:5px;">Copy</button>
                     </div>
                     """
-                    components.html(html_block, height=200)
+                    col_index = idx % 3
+                    columns[col_index].components.html(html_block, height=200)
             else:
                 st.info("Nation Statistics data not loaded yet. Please download the data first.")
 

@@ -92,21 +92,29 @@ def main():
     if "df" in st.session_state:
         df = st.session_state.df.copy()
         
-        st.subheader("Enter Ruler Names (one per line)")
-        ruler_names_input = st.text_area("Paste the ruler names here", height=150)
+        st.subheader("Enter Ruler or Nation Names (one per line)")
+        # Provide an option to choose which column(s) to filter by.
+        filter_by = st.selectbox("Filter by", ["Ruler Name", "Nation Name", "Both"], index=0)
+        names_input = st.text_area("Paste the names here", height=150)
         
         if st.button("Search"):
             # Convert input to a list (ignoring extra whitespace and empty lines)
-            rulers = [name.strip() for name in ruler_names_input.splitlines() if name.strip()]
-            if not rulers:
-                st.info("No ruler names entered. Please paste one or more ruler names.")
+            filters = [name.strip() for name in names_input.splitlines() if name.strip()]
+            if not filters:
+                st.info("No names entered. Please paste one or more names.")
             else:
-                # Case-insensitive search: convert both the search list and DataFrame column to lowercase.
-                lower_rulers = [r.lower() for r in rulers]
-                result_df = df[df["Ruler Name"].str.lower().isin(lower_rulers)].copy()
+                # Convert filters to lowercase for case-insensitive search.
+                lower_filters = [f.lower() for f in filters]
+                if filter_by == "Ruler Name":
+                    result_df = df[df["Ruler Name"].str.lower().isin(lower_filters)].copy()
+                elif filter_by == "Nation Name":
+                    result_df = df[df["Nation Name"].str.lower().isin(lower_filters)].copy()
+                else:  # Both
+                    mask = df["Ruler Name"].str.lower().isin(lower_filters) | df["Nation Name"].str.lower().isin(lower_filters)
+                    result_df = df[mask].copy()
                 
                 if result_df.empty:
-                    st.info("No matching ruler names found. Check your input for spelling or extra spaces.")
+                    st.info("No matching entries found. Check your input for spelling or extra spaces.")
                 else:
                     # Calculate Resource 1+2 column.
                     result_df["Resource 1+2"] = result_df.apply(get_resource_1_2, axis=1)

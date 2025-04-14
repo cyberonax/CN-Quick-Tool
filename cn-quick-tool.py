@@ -293,8 +293,8 @@ def main():
         )
         # Retrieve alliance options
         if "df" in st.session_state:
-            df = st.session_state.df.copy()
-            alliance_options = sorted(df["Alliance"].dropna().unique().tolist())
+            cc_df = st.session_state.df.copy()
+            alliance_options = sorted(cc_df["Alliance"].dropna().unique().tolist())
             default_index = alliance_options.index("Freehold of The Wolves") if "Freehold of The Wolves" in alliance_options else 0
         else:
             alliance_options = ["Freehold of The Wolves"]
@@ -328,7 +328,8 @@ def main():
                     </div>
                     """
                     col_index = idx % 3
-                    columns[col_index].components.html(html_block, height=200)
+                    with columns[col_index]:
+                        components.html(html_block, height=200)
             else:
                 st.info("Nation Statistics data not loaded yet. Please download the data first.")
 

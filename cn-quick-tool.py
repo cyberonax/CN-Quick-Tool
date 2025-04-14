@@ -319,13 +319,15 @@ def main():
                 # Display each block in its own text box with a copy button.
                 for idx, group in enumerate(groups):
                     block_text = "\n".join(group)
-                    # Create a unique ID for the HTML elements so the copy button knows which text to copy.
                     unique_id = f"cc_textarea_{idx}"
                     html_block = f"""
-                    <textarea id="{unique_id}" style="width:100%; height:150px;">{block_text}</textarea>
-                    <button onclick="navigator.clipboard.writeText(document.getElementById('{unique_id}').value)">Copy</button>
+                    <div style="margin-bottom: 10px;">
+                        <textarea id="{unique_id}" style="width:100%; height:150px;">{block_text}</textarea>
+                        <br>
+                        <button onclick="navigator.clipboard.writeText(document.getElementById('{unique_id}').value)">Copy</button>
+                    </div>
                     """
-                    st.markdown(html_block, unsafe_allow_html=True)
+                    st.components.v1.html(html_block, height=220)
             else:
                 st.info("Nation Statistics data not loaded yet. Please download the data first.")
 

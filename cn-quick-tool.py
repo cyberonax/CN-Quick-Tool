@@ -69,6 +69,16 @@ def load_data():
             return df
     return None
 
+# Callback functions to set the flag for keeping sections open.
+def keep_cse_open():
+    st.session_state.cse_expanded = True
+
+def keep_alliance_open():
+    st.session_state.alliance_expanded = True
+
+def keep_trade_open():
+    st.session_state.trade_circle_expanded = True
+
 # -----------------------
 # MAIN APP
 # -----------------------
@@ -149,9 +159,10 @@ def main():
             - **Output 3:** Shows the names joined by a comma.
             """
         )
-        names_input = st.text_area("Enter text", height=100, key="cse_text")
+        # on_change callback sets the state when the user interacts with the text area.
+        names_input = st.text_area("Enter text", height=100, key="cse_text", on_change=keep_cse_open)
         if st.button("Generate", key="cse_generate"):
-            st.session_state.cse_expanded = True  # Keep section open after generation.
+            st.session_state.cse_expanded = True  # Ensure this section stays open.
             if names_input:
                 # Split the input on commas or newlines using regex.
                 names_list = [name.strip() for name in re.split(r"[,\n]+", names_input) if name.strip()]
@@ -165,18 +176,12 @@ def main():
                 st.text_area("Output 1 (each name on a separate line)", value=output1, height=150)
                 st.text_area("Output 2 (quoted names with trailing comma)", value=output2, height=150)
                 st.text_area("Output 3 (names joined by a comma)", value=output3, height=100)
-        # Checkbox to allow user to manually keep section open.
-        if st.checkbox("Keep this section open", key="cse_keep", value=st.session_state.cse_expanded):
-            st.session_state.cse_expanded = True
     
     # -----------------------
     # COLLAPSIBLE SECTION: Alliance Member Exclusion/Inclusion Tool
     # -----------------------
     alliance_container = st.empty()
-    if st.session_state.alliance_expanded:
-        alliance_expanded_flag = True
-    else:
-        alliance_expanded_flag = False
+    alliance_expanded_flag = st.session_state.alliance_expanded
     with alliance_container.expander("Alliance Member Exclusion/Inclusion Tool", expanded=alliance_expanded_flag):
         st.markdown(
             """
@@ -189,9 +194,8 @@ def main():
             If no names are provided, both results will remain blank.
             """
         )
-        # Include a checkbox to let the user manually keep the section open.
-        if st.checkbox("Keep this section open", key="alliance_keep", value=st.session_state.alliance_expanded):
-            st.session_state.alliance_expanded = True
+        # Use on_change callback on the text area to set the expanded flag without a visible checkbox.
+        names_alliance_input = st.text_area("Enter Nation or Ruler Names (one per line)", height=150, key="alliance_input", on_change=keep_alliance_open)
         # Check if the data is loaded to extract alliance options
         if "df" in st.session_state:
             df = st.session_state.df.copy()
@@ -202,7 +206,6 @@ def main():
             default_index = 0
 
         alliance_selected = st.selectbox("Select Alliance", options=alliance_options, index=default_index, key="alliance_select")
-        names_alliance_input = st.text_area("Enter Nation or Ruler Names (one per line)", height=150, key="alliance_input")
         if st.button("Search", key="alliance_generate"):
             st.session_state.alliance_expanded = True  # Keep this section open after generation.
             if names_alliance_input:
@@ -234,10 +237,7 @@ def main():
     # COLLAPSIBLE SECTION: Trade Circle ID Generator
     # -----------------------
     trade_container = st.empty()
-    if st.session_state.trade_circle_expanded:
-        trade_expanded_flag = True
-    else:
-        trade_expanded_flag = False
+    trade_expanded_flag = st.session_state.trade_circle_expanded
     with trade_container.expander("Trade Circle ID Generator", expanded=trade_expanded_flag):
         st.markdown(
             """
@@ -246,10 +246,7 @@ def main():
             ordered from smallest to largest and separated by periods.
             """
         )
-        # Include a checkbox to let the user manually keep the section open.
-        if st.checkbox("Keep this section open", key="trade_keep", value=st.session_state.trade_circle_expanded):
-            st.session_state.trade_circle_expanded = True
-        names_trade_input = st.text_area("Enter Nation or Ruler Names (one per line) for Trade Circle ID", height=150, key="trade_input")
+        names_trade_input = st.text_area("Enter Nation or Ruler Names (one per line) for Trade Circle ID", height=150, key="trade_input", on_change=keep_trade_open)
         if st.button("Generate", key="trade_generate"):
             st.session_state.trade_circle_expanded = True  # Keep this section open after generation.
             if names_trade_input:

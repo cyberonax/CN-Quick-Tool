@@ -122,33 +122,27 @@ def main():
             if not names_input.strip():
                 st.info("No names entered. Please paste one or more names.")
             else:
-                # Convert input to a list (ignoring extra whitespace and empty lines) for the primary lookup.
+                # Primary lookup: build a list from non-blank input lines for the main table.
                 filters = [name.strip() for name in names_input.splitlines() if name.strip()]
-                # Create a mask where either the Ruler Name or Nation Name column matches any input.
-                df = st.session_state.df.copy()
                 lower_filters = [f.lower() for f in filters]
+                df = st.session_state.df.copy()
                 mask = df["Ruler Name"].str.lower().isin(lower_filters) | df["Nation Name"].str.lower().isin(lower_filters)
                 result_df = df[mask].copy()
                 
                 if result_df.empty:
                     st.info("No matching entries found. Check your input for spelling or extra spaces.")
                 else:
-                    # Calculate the Resource 1+2 column.
+                    # Calculate additional columns for the main output.
                     result_df["Resource 1+2"] = result_df.apply(get_resource_1_2, axis=1)
-                    
-                    # Build the Nation Drill Link.
                     result_df["Nation Drill Link"] = (
                         "https://www.cybernations.net/nation_drill_display.asp?Nation_ID=" +
                         result_df["Nation ID"].astype(str)
                     )
-                    
-                    # Compute the "Days Old" column based on the "Created" column.
                     result_df["Created_dt"] = pd.to_datetime(result_df["Created"], errors='coerce')
                     result_df["Days Old"] = (pd.Timestamp.now() - result_df["Created_dt"]).dt.days
                     
                     # Reorder columns: Nation ID, Ruler Name, Resource 1+2, Alliance, Team, Days Old, Nation Drill Link.
                     display_df = result_df[["Nation ID", "Ruler Name", "Resource 1+2", "Alliance", "Team", "Days Old", "Nation Drill Link"]]
-                    
                     st.dataframe(display_df)
                     
                     # Provide a CSV download option.
@@ -156,39 +150,42 @@ def main():
                     st.download_button("Download Results as CSV", csv, file_name="ruler_search_results.csv", mime="text/csv")
                     
                     # -----------------------
-                    # NEW: Alternative Format Output preserving spacing and order of names
+                    # NEW: Alternative Format Output as a Table
                     # -----------------------
                     st.markdown("### Alternative Format Output")
                     st.markdown(
                         """
-                        This output preserves the original grouping and blank lines as entered.
-                        For each non-empty line, if a match is found in the data, the following columns are displayed:
+                        This table preserves the original grouping and blank lines as entered.
+                        For each non-empty line:
                         
-                        - Ruler Name  
-                        - Resource 1+2  
-                        - Alliance  
-                        - Team  
-                        - (Empty placeholder column)  
-                        - Nation Drill Link
+                        - If a match is found (using case–insensitive exact matching against Ruler or Nation Name), the following columns are displayed:
+                          - Ruler Name  
+                          - Resource 1+2  
+                          - Alliance  
+                          - Team  
+                          - Days Old  
+                          - Nation Drill Link
                         
-                        Unrecognized names (e.g. "x") will be repeated in all columns.
+                        - If no match is found, the input text is repeated in every column.
+                        Blank lines are preserved as empty rows.
                         """
                     )
                     # Process the raw input lines preserving blank lines.
                     raw_lines = names_input.splitlines()
-                    lines_output = []
-                    
-                    # Set up a header (columns separated by tabs)
-                    header = ["Ruler Name", "Resource 1+2", "Alliance", "Team", " ", "Nation Drill Link"]
-                    lines_output.append("\t".join(header))
-                    
+                    alt_rows = []
                     for line in raw_lines:
-                        # If line is blank, preserve an empty row.
                         if line.strip() == "":
-                            lines_output.append("")
+                            # Preserve blank row.
+                            alt_rows.append({
+                                "Ruler Name": "",
+                                "Resource 1+2": "",
+                                "Alliance": "",
+                                "Team": "",
+                                "Days Old": "",
+                                "Nation Drill Link": ""
+                            })
                             continue
                         lookup_name = line.strip()
-                        # Attempt lookup in the data (case-insensitive exact match against Ruler Name or Nation Name).
                         temp_df = st.session_state.df.copy()
                         mask = temp_df["Ruler Name"].str.lower() == lookup_name.lower()
                         if not mask.any():
@@ -199,15 +196,29 @@ def main():
                             res = get_resource_1_2(row)
                             alliance = row["Alliance"]
                             team = row["Team"]
+                            created_dt = pd.to_datetime(row["Created"], errors='coerce')
+                            days_old = (pd.Timestamp.now() - created_dt).days if pd.notnull(created_dt) else ""
                             nation_drill = "https://www.cybernations.net/nation_drill_display.asp?Nation_ID=" + str(row["Nation ID"])
-                            line_out = "\t".join([str(ruler), str(res), str(alliance), str(team), "", nation_drill])
+                            alt_rows.append({
+                                "Ruler Name": ruler,
+                                "Resource 1+2": res,
+                                "Alliance": alliance,
+                                "Team": team,
+                                "Days Old": days_old,
+                                "Nation Drill Link": nation_drill
+                            })
                         else:
-                            # For unrecognized names, repeat the lookup text in all columns.
-                            line_out = "\t".join([lookup_name] * 5 + [lookup_name])
-                        lines_output.append(line_out)
-                    
-                    alt_table_text = "\n".join(lines_output)
-                    st.text_area("Alternative Format Output", value=alt_table_text, height=300)
+                            # For unrecognized names, repeat the input text in every column.
+                            alt_rows.append({
+                                "Ruler Name": lookup_name,
+                                "Resource 1+2": lookup_name,
+                                "Alliance": lookup_name,
+                                "Team": lookup_name,
+                                "Days Old": lookup_name,
+                                "Nation Drill Link": lookup_name
+                            })
+                    alt_df = pd.DataFrame(alt_rows, columns=["Ruler Name", "Resource 1+2", "Alliance", "Team", "Days Old", "Nation Drill Link"])
+                    st.table(alt_df)
     
     # -----------------------
     # COLLAPSIBLE SECTION: Process Comma-Separated Names
@@ -339,22 +350,18 @@ def main():
         trade_circle_id_input = st.text_input("Enter a Trade Circle ID (e.g., 1001.1003.1007)", key="trade_circle_id_convert")
         if st.button("Convert", key="trade_convert"):
             if trade_circle_id_input:
-                # Split the Trade Circle ID string by period to get individual Nation IDs.
                 nation_id_list = [tid.strip() for tid in trade_circle_id_input.split('.') if tid.strip()]
                 ruler_names = []
                 not_found = []
                 if "df" in st.session_state:
                     data_df = st.session_state.df.copy()
                     for nid in nation_id_list:
-                        # Compare the Nation ID as a string.
                         match = data_df[data_df["Nation ID"].astype(str) == nid]
                         if not match.empty:
-                            # Assuming Nation IDs are unique; get the first matching Ruler Name.
                             ruler_names.append(match.iloc[0]["Ruler Name"])
                         else:
                             not_found.append(nid)
                     if ruler_names:
-                        # Sort the ruler names alphabetically in a case-insensitive manner.
                         sorted_names = sorted(ruler_names, key=lambda x: x.lower())
                         st.markdown("**Ruler Names for the provided Trade Circle ID (alphabetical order):**")
                         st.text("\n".join(sorted_names))
@@ -394,7 +401,6 @@ def main():
                 rulers_list = cc_df["Ruler Name"].dropna().tolist()
                 rulers_list = [ruler.strip() for ruler in rulers_list if ruler.strip()]
                 rulers_list = sorted(rulers_list, key=str.lower)
-                
                 groups = [rulers_list[i:i+26] for i in range(0, len(rulers_list), 26)]
                 
                 # Arrange boxes in 3 columns.

@@ -79,6 +79,9 @@ def keep_alliance_open():
 def keep_trade_open():
     st.session_state.trade_circle_expanded = True
 
+def keep_cc_open():
+    st.session_state.cc_expanded = True
+
 # -----------------------
 # MAIN APP
 # -----------------------
@@ -90,6 +93,8 @@ def main():
         st.session_state.trade_circle_expanded = False
     if "cse_expanded" not in st.session_state:
         st.session_state.cse_expanded = False
+    if "cc_expanded" not in st.session_state:
+        st.session_state.cc_expanded = False
 
     st.set_page_config(layout="wide")
     st.title("Cyber Nations | Nation Ruler Search | Quick Tool")
@@ -273,10 +278,12 @@ def main():
             else:
                 st.info("Nation Statistics data not loaded yet. Please download the data first.")
     
+    st.markdown("---")
+    
     # -----------------------
     # COLLAPSIBLE SECTION: Carbon Copy Rulers Tool
     # -----------------------
-    with st.expander("Carbon Copy Rulers Tool"):
+    with st.expander("Carbon Copy Rulers Tool", expanded=st.session_state.cc_expanded):
         st.markdown(
             """
             Select an alliance to retrieve its list of Nation Rulers.
@@ -295,7 +302,8 @@ def main():
             default_index = 0
 
         alliance_selected_cc = st.selectbox("Select Alliance", options=alliance_options, index=default_index, key="alliance_select_cc")
-        if st.button("Load Nation Rulers for Selected Alliance", key="cc_generate"):
+        if st.button("Load Nation Rulers for Selected Alliance", key="cc_generate", on_click=keep_cc_open):
+            st.session_state.cc_expanded = True  # Ensure the section remains open after generation.
             if "df" in st.session_state:
                 cc_df = st.session_state.df.copy()
                 # Filter by the selected alliance

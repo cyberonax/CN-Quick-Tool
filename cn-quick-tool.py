@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import requests
 import zipfile
@@ -278,6 +279,8 @@ def main():
             else:
                 st.info("Nation Statistics data not loaded yet. Please download the data first.")
     
+    st.markdown("---")
+    
     # -----------------------
     # COLLAPSIBLE SECTION: Carbon Copy Rulers Tool
     # -----------------------
@@ -312,20 +315,20 @@ def main():
                 rulers_list = sorted(rulers_list, key=str.lower)
                 
                 # Group the rulers into blocks of 26 names per block.
-                groups = []
-                for i in range(0, len(rulers_list), 26):
-                    groups.append(rulers_list[i:i+26])
+                groups = [rulers_list[i:i+26] for i in range(0, len(rulers_list), 26)]
                 
                 # Display each block in its own text box with a copy button.
                 for idx, group in enumerate(groups):
                     block_text = "\n".join(group)
-                    # Create a unique ID for the HTML elements so the copy button knows which text to copy.
                     unique_id = f"cc_textarea_{idx}"
                     html_block = f"""
-                    <textarea id="{unique_id}" style="width:100%; height:150px;">{block_text}</textarea>
-                    <button onclick="navigator.clipboard.writeText(document.getElementById('{unique_id}').value)">Copy</button>
+                    <div style="margin-bottom: 20px;">
+                      <textarea id="{unique_id}" style="width:100%; height:150px;">{block_text}</textarea>
+                      <br>
+                      <button onclick="navigator.clipboard.writeText(document.getElementById('{unique_id}').value)" style="margin-top:5px;">Copy</button>
+                    </div>
                     """
-                    st.markdown(html_block, unsafe_allow_html=True)
+                    components.html(html_block, height=200)
             else:
                 st.info("Nation Statistics data not loaded yet. Please download the data first.")
 

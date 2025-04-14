@@ -150,7 +150,7 @@ def main():
                     st.download_button("Download Results as CSV", csv, file_name="ruler_search_results.csv", mime="text/csv")
                     
                     # -----------------------
-                    # NEW: Alternative Format Output as a Table with Copy Button
+                    # NEW: Alternative Format Output as a Table
                     # -----------------------
                     st.markdown("### Alternative Format Output")
                     st.markdown(
@@ -218,51 +218,17 @@ def main():
                                 "Nation Drill Link": lookup_name
                             })
                     alt_df = pd.DataFrame(alt_rows, columns=["Ruler Name", "Resource 1+2", "Alliance", "Team", "Days Old", "Nation Drill Link"])
+                    st.table(alt_df)
                     
-                    # Convert the alternative DataFrame to an HTML table.
-                    alt_html_table = alt_df.to_html(index=False)
-                    # Embed the table into HTML that includes a copy-to-clipboard button.
-                    alt_html = f"""
-                    <html>
-                    <head>
-                      <meta charset="utf-8">
-                      <style>
-                        table, th, td {{
-                          border: 1px solid black;
-                          border-collapse: collapse;
-                          padding: 5px;
-                        }}
-                        button {{
-                          margin-top: 10px;
-                        }}
-                      </style>
-                    </head>
-                    <body>
-                      <div id="alt-table">
-                        {alt_html_table}
-                      </div>
-                      <button onclick="copyAltTable()">Copy Table to Clipboard</button>
-                      <script>
-                      function copyAltTable(){{
-                        var range = document.createRange();
-                        var element = document.getElementById("alt-table");
-                        range.selectNode(element);
-                        window.getSelection().removeAllRanges();
-                        window.getSelection().addRange(range);
-                        try {{
-                          document.execCommand('copy');
-                          alert("Table copied to clipboard!");
-                        }} catch(err) {{
-                          alert("Unable to copy the table.");
-                        }}
-                        window.getSelection().removeAllRanges();
-                      }}
-                      </script>
-                    </body>
-                    </html>
+                    # Convert alternative table to tab-separated text for copying
+                    alt_table_text = alt_df.to_csv(sep="\t", index=False)
+                    copy_button_html = f"""
+                    <textarea id="alt_table_text" style="display:none;">{alt_table_text}</textarea>
+                    <button onclick="navigator.clipboard.writeText(document.getElementById('alt_table_text').value)">
+                        Copy Table to Clipboard
+                    </button>
                     """
-                    # Render the HTML using components.html
-                    components.html(alt_html, height=500)
+                    st.components.v1.html(copy_button_html, height=50)
     
     # -----------------------
     # COLLAPSIBLE SECTION: Process Comma-Separated Names

@@ -149,7 +149,6 @@ def main():
             - **Output 3:** Shows the names joined by a comma.
             """
         )
-        
         names_input = st.text_area("Enter text", height=100, key="cse_text")
         if st.button("Generate", key="cse_generate"):
             st.session_state.cse_expanded = True  # Keep section open after generation.
@@ -166,6 +165,9 @@ def main():
                 st.text_area("Output 1 (each name on a separate line)", value=output1, height=150)
                 st.text_area("Output 2 (quoted names with trailing comma)", value=output2, height=150)
                 st.text_area("Output 3 (names joined by a comma)", value=output3, height=100)
+        # Checkbox to allow user to manually keep section open.
+        if st.checkbox("Keep this section open", key="cse_keep", value=st.session_state.cse_expanded):
+            st.session_state.cse_expanded = True
     
     # -----------------------
     # COLLAPSIBLE SECTION: Alliance Member Exclusion/Inclusion Tool
@@ -187,6 +189,9 @@ def main():
             If no names are provided, both results will remain blank.
             """
         )
+        # Include a checkbox to let the user manually keep the section open.
+        if st.checkbox("Keep this section open", key="alliance_keep", value=st.session_state.alliance_expanded):
+            st.session_state.alliance_expanded = True
         # Check if the data is loaded to extract alliance options
         if "df" in st.session_state:
             df = st.session_state.df.copy()
@@ -241,6 +246,9 @@ def main():
             ordered from smallest to largest and separated by periods.
             """
         )
+        # Include a checkbox to let the user manually keep the section open.
+        if st.checkbox("Keep this section open", key="trade_keep", value=st.session_state.trade_circle_expanded):
+            st.session_state.trade_circle_expanded = True
         names_trade_input = st.text_area("Enter Nation or Ruler Names (one per line) for Trade Circle ID", height=150, key="trade_input")
         if st.button("Generate", key="trade_generate"):
             st.session_state.trade_circle_expanded = True  # Keep this section open after generation.

@@ -116,6 +116,7 @@ def main():
     # -----------------------
     with st.expander("Ruler Search Interface", expanded=True):
         st.subheader("Enter Nation or Ruler Names (one per line)")
+        # Save raw input for later processing
         names_input = st.text_area("Paste the names here", height=150)
         
         if st.button("Search", key="ruler_search"):
@@ -144,7 +145,6 @@ def main():
                     )
                     
                     # Compute the "Days Old" column based on the "Created" column.
-                    # Convert Created to datetime (errors will result in NaT)
                     result_df["Created_dt"] = pd.to_datetime(result_df["Created"], errors='coerce')
                     result_df["Days Old"] = (pd.Timestamp.now() - result_df["Created_dt"]).dt.days
                     
@@ -156,6 +156,35 @@ def main():
                     # Provide a CSV download option.
                     csv = display_df.to_csv(index=False)
                     st.download_button("Download Results as CSV", csv, file_name="ruler_search_results.csv", mime="text/csv")
+                    
+                    # -----------------------
+                    # NEW TABLE: Formatted Ruler Names Structure
+                    # -----------------------
+                    st.markdown("#### Formatted Ruler Names Structure")
+                    # Process the raw input preserving group structure (groups separated by blank lines).
+                    groups = [grp.strip().splitlines() for grp in names_input.split("\n\n") if grp.strip()]
+                    processed_groups = []
+                    max_lines = 0
+                    for grp in groups:
+                        lines = []
+                        for line in grp:
+                            line = line.strip()
+                            # Replace unrecognized names ("x") with an empty string.
+                            if line.lower() == "x":
+                                lines.append("")
+                            else:
+                                lines.append(line)
+                        processed_groups.append(lines)
+                        if len(lines) > max_lines:
+                            max_lines = len(lines)
+                    # Pad groups with empty strings so that all groups have the same number of lines.
+                    for grp in processed_groups:
+                        while len(grp) < max_lines:
+                            grp.append("")
+                    # Create DataFrame columns for each line.
+                    columns = [f"Line {i+1}" for i in range(max_lines)]
+                    df_groups = pd.DataFrame(processed_groups, columns=columns)
+                    st.dataframe(df_groups)
     
     # -----------------------
     # COLLAPSIBLE SECTION: Process Comma-Separated Names

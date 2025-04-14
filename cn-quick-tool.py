@@ -92,7 +92,7 @@ def main():
     if "df" in st.session_state:
         df = st.session_state.df.copy()
         
-        st.subheader("Enter Ruler or Nation Names (one per line)")
+        st.subheader("Enter Nation or Ruler Names (one per line)")
         names_input = st.text_area("Paste the names here", height=150)
         
         if st.button("Search"):

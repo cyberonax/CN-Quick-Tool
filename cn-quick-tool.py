@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import requests
 import zipfile
@@ -287,7 +288,8 @@ def main():
             Select an alliance to retrieve its list of Nation Rulers.
             
             The ruler names are displayed one per line and grouped into blocks of 26 names.
-            Each block is presented in its own text box with a copy-to-clipboard button.
+            A visible text box shows the ruler names, and a copy-to-clipboard button (rendered with components.html)
+            will copy the contents of the associated text box.
             """
         )
         # Retrieve alliance options
@@ -312,21 +314,28 @@ def main():
                 rulers_list = sorted(rulers_list, key=str.lower)
                 
                 # Group the rulers into blocks of 26 names per block.
-                groups = []
-                for i in range(0, len(rulers_list), 26):
-                    groups.append(rulers_list[i:i+26])
+                groups = [rulers_list[i:i+26] for i in range(0, len(rulers_list), 26)]
                 
-                # Display each block in its own text box with a copy button.
+                # For each group, display a visible text box (using st.markdown with inline HTML)
+                # and then render a copy button via components.html that copies from that text box.
                 for idx, group in enumerate(groups):
                     block_text = "\n".join(group)
                     unique_id = f"cc_textarea_{idx}"
-                    # The inline HTML is dedented so that the text area shows the rulers
-                    # and the copy button correctly copies its contents.
-                    html_block = (
-f"""<textarea id="{unique_id}" style="width:100%; height:150px;">{block_text}</textarea>
-<button style="margin-top: 5px;" onclick="navigator.clipboard.writeText(document.getElementById('{unique_id}').value)">Copy</button>"""
-                    )
-                    st.markdown(html_block, unsafe_allow_html=True)
+                    
+                    # Render the visible text box
+                    html_visible = f"""
+                    <textarea id="{unique_id}" style="width:100%; height:150px;">{block_text}</textarea>
+                    """
+                    st.markdown(html_visible, unsafe_allow_html=True)
+                    
+                    # Render the copy button from the second code.
+                    html_copy = f"""
+                    <div style="margin-bottom: 20px;">
+                      <button onclick="navigator.clipboard.writeText(document.getElementById('{unique_id}').value)" 
+                              style="margin-top:5px;">Copy</button>
+                    </div>
+                    """
+                    components.html(html_copy, height=50)
             else:
                 st.info("Nation Statistics data not loaded yet. Please download the data first.")
 

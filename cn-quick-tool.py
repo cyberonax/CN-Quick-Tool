@@ -132,7 +132,7 @@ def main():
     # COLLAPSIBLE SECTION: Process Comma-Separated Names
     # -----------------------
     st.markdown("### Other Tools")
-    with st.expander("Comma-Separated Name Processor"):
+    with st.expander("Comma-Separated Name Processor", expanded=True):
         st.markdown(
             """
             Paste a list of names, numbers, or other text below (separated by commas or new lines).
@@ -165,7 +165,7 @@ def main():
     # -----------------------
     # COLLAPSIBLE SECTION: Alliance Member Exclusion/Inclusion Tool
     # -----------------------
-    with st.expander("Alliance Member Exclusion/Inclusion Tool"):
+    with st.expander("Alliance Member Exclusion/Inclusion Tool", expanded=True):
         st.markdown(
             """
             Enter a list of Nation or Ruler Names (one per line) below and select an alliance.
@@ -225,7 +225,7 @@ def main():
     # -----------------------
     # COLLAPSIBLE SECTION: Trade Circle ID Generator
     # -----------------------
-    with st.expander("Trade Circle ID Generator"):
+    with st.expander("Trade Circle ID Generator", expanded=True):
         st.markdown(
             """
             Paste a list of Nation or Ruler Names (one per line) below.

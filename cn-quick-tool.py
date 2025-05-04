@@ -118,54 +118,91 @@ def main():
         st.subheader("Enter Nation or Ruler Names (one per line)")
         names = st.text_area("Paste the names here", height=150)
         if st.button("Search", key="ruler_search") and names.strip():
-            df = st.session_state.df.copy(); now = pd.Timestamp.now()
+            df = st.session_state.df.copy()
+            now = pd.Timestamp.now()
+
             def mk(e):
                 e_l = e.lower()
-                # full match
-                m1 = (df["Ruler Name"].str.lower()==e_l)|(df["Nation Name"].str.lower()==e_l)
-                if m1.any(): return m1
-                # split on last ' of '
-                idx = e_l.rfind(" of ")
-                if idx>=0:
-                    r,n = e[:idx].strip().lower(), e[idx+4:].strip().lower()
-                    m2 = (df["Ruler Name"].str.lower()==r)&(df["Nation Name"].str.lower()==n)
+                # 1) exact full‐match
+                m = (df["Ruler Name"].str.lower().eq(e_l) |
+                     df["Nation Name"].str.lower().eq(e_l))
+                if m.any(): return m
+
+                # 2) split on every “ of ”
+                parts = re.split(r'(?i)\s+of\s+', e)
+                if len(parts) >= 2:
+                    if len(parts) == 2:
+                        ruler, nation = parts[0], parts[1]
+                    else:
+                        ruler = " of ".join(parts[:-2])
+                        nation = " of ".join(parts[-2:])
+                    r_l, n_l = ruler.strip().lower(), nation.strip().lower()
+                    m2 = (df["Ruler Name"].str.lower().eq(r_l) &
+                          df["Nation Name"].str.lower().eq(n_l))
                     if m2.any(): return m2
+
+                    # 3) fallback: just match the ruler part
+                    m3 = df["Ruler Name"].str.lower().eq(r_l)
+                    if m3.any(): return m3
+
+                # 4) nothing found
                 return pd.Series(False, index=df.index)
+
+            # build combined mask over all lines
             entries = [l.strip() for l in names.splitlines() if l.strip()]
             mask = pd.concat([mk(e) for e in entries], axis=1).any(axis=1)
             res = df[mask].copy()
+
             if res.empty:
                 st.info("No matching entries found. Check your input for spelling or extra spaces.")
             else:
-                res["Resource 1+2"] = res.apply(get_resource_1_2, axis=1)
-                res["Nation Drill Link"] = "https://www.cybernations.net/nation_drill_display.asp?Nation_ID="+res["Nation ID"].astype(str)
-                res["Days Old"] = (now - pd.to_datetime(res["Created"], errors="coerce")).dt.days
+                # compute and show results (unchanged)
+                res["Resource 1+2"]      = res.apply(get_resource_1_2, axis=1)
+                res["Nation Drill Link"] = (
+                  "https://www.cybernations.net/nation_drill_display.asp?Nation_ID="
+                  + res["Nation ID"].astype(str)
+                )
+                res["Days Old"] = (now - pd.to_datetime(res["Created"], errors='coerce')).dt.days
+
                 cols = ["Nation ID","Ruler Name","Resource 1+2","Alliance","Team","Days Old","Nation Drill Link"]
-                st.dataframe(res[cols])
-                st.download_button("Download Results as CSV", res[cols].to_csv(index=False), "ruler_search_results.csv", "text/csv")
-                # Alternative Format
-                st.markdown("### Alternative Format Output"); alt=[]
+                display_df = res[cols]
+                st.dataframe(display_df)
+                st.download_button(
+                  "Download Results as CSV",
+                  display_df.to_csv(index=False),
+                  "ruler_search_results.csv","text/csv"
+                )
+
+                # alternative format (also unchanged)
+                st.markdown("### Alternative Format Output")
+                alt = []
                 for line in names.splitlines():
                     if not line.strip():
-                        alt.append({c:"" for c in cols[1:]}); continue
+                        alt.append({c:"" for c in cols[1:]})
+                        continue
                     m = mk(line.strip())
                     if m.any():
-                        row = df[m].iloc[0]; days = (now - pd.to_datetime(row["Created"], errors="coerce")).days
+                        row = df[m].iloc[0]
+                        days = (now - pd.to_datetime(row["Created"], errors='coerce')).days
                         alt.append({
                             "Ruler Name": row["Ruler Name"],
                             "Resource 1+2": get_resource_1_2(row),
-                            "Alliance": row["Alliance"],
-                            "Team": row["Team"],
-                            "Days Old": days,
-                            "Nation Drill Link": "https://www.cybernations.net/nation_drill_display.asp?Nation_ID="+str(row["Nation ID"])
+                            "Alliance":     row["Alliance"],
+                            "Team":         row["Team"],
+                            "Days Old":     days,
+                            "Nation Drill Link":
+                              "https://www.cybernations.net/nation_drill_display.asp?Nation_ID="
+                              + str(row["Nation ID"])
                         })
                     else:
-                        v = line.strip(); alt.append({c: v for c in cols[1:]})
+                        val = line.strip()
+                        alt.append({c: val for c in cols[1:]})
                 alt_df = pd.DataFrame(alt, columns=cols[1:])
-                txt = alt_df.to_csv(sep="\t", index=False)
+                tsv = alt_df.to_csv(sep="\t", index=False)
                 st.components.v1.html(
-                    f"<textarea id='x' style='display:none;'>{txt}</textarea>"
-                    "<button onclick=\"navigator.clipboard.writeText(document.getElementById('x').value)\">Copy Table to Clipboard</button>",
+                    f"<textarea id='x' style='display:none;'>{tsv}</textarea>"
+                    "<button onclick=\"navigator.clipboard.writeText("
+                    "document.getElementById('x').value)\">Copy Table to Clipboard</button>",
                     height=50
                 )
                 st.table(alt_df)

@@ -116,67 +116,65 @@ def main():
     # -----------------------
     with st.expander("Ruler Search Interface", expanded=True):
         st.subheader("Enter Nation or Ruler Names (one per line)")
-        names_input = st.text_area("Paste the names here", height=150)
+        names = st.text_area("Paste the names here", height=150)
         if st.button("Search", key="ruler_search"):
-            filters = [n.strip() for n in names_input.splitlines() if n.strip()]
-            if not filters:
+            if not names.strip():
                 st.info("No names entered. Please paste one or more names.")
             else:
                 df = st.session_state.df.copy()
-                mask = pd.Series(False, index=df.index)
-                for f in filters:
-                    m = re.match(r"^(.*?)\s+of\s+(.*?)$", f, flags=re.IGNORECASE)
+                now = pd.Timestamp.now()
+                # helper to build mask for one entry
+                def mk(e):
+                    m = re.match(r'(.+?)\s+of\s+(.+)', e, flags=re.IGNORECASE)
                     if m:
                         r, n = m.group(1).lower(), m.group(2).lower()
-                        mask |= (df["Ruler Name"].str.lower()==r)&(df["Nation Name"].str.lower()==n)
-                    else:
-                        lookup = f.lower()
-                        mask |= df["Ruler Name"].str.lower().eq(lookup)|df["Nation Name"].str.lower().eq(lookup)
-                result = df[mask].copy()
-                if result.empty:
+                        return df["Ruler Name"].str.lower().eq(r) & df["Nation Name"].str.lower().eq(n)
+                    return (df["Ruler Name"].str.lower().eq(e.lower()) |
+                            df["Nation Name"].str.lower().eq(e.lower()))
+                entries = [l.strip() for l in names.splitlines() if l.strip()]
+                mask = pd.concat([mk(e) for e in entries], axis=1).any(axis=1)
+                res = df[mask].copy()
+                if res.empty:
                     st.info("No matching entries found. Check your input for spelling or extra spaces.")
                 else:
-                    result["Resource 1+2"] = result.apply(get_resource_1_2, axis=1)
-                    result["Nation Drill Link"] = "https://www.cybernations.net/nation_drill_display.asp?Nation_ID="+result["Nation ID"].astype(str)
-                    result["Days Old"] = (pd.Timestamp.now() - pd.to_datetime(result["Created"], errors='coerce')).dt.days
-                    disp = result[["Nation ID","Ruler Name","Resource 1+2","Alliance","Team","Days Old","Nation Drill Link"]]
-                    st.dataframe(disp)
-                    st.download_button("Download Results as CSV", disp.to_csv(index=False), file_name="ruler_search_results.csv", mime="text/csv")
-    
-                    # Alternative Format Output
+                    # main output
+                    res["Resource 1+2"] = res.apply(get_resource_1_2, axis=1)
+                    res["Nation Drill Link"] = "https://www.cybernations.net/nation_drill_display.asp?Nation_ID=" + res["Nation ID"].astype(str)
+                    res["Days Old"] = (now - pd.to_datetime(res["Created"], errors='coerce')).dt.days
+                    cols = ["Nation ID","Ruler Name","Resource 1+2","Alliance","Team","Days Old","Nation Drill Link"]
+                    display_df = res[cols]
+                    st.dataframe(display_df)
+                    st.download_button("Download Results as CSV", display_df.to_csv(index=False), "ruler_search_results.csv", "text/csv")
+                    # alternative format
                     st.markdown("### Alternative Format Output")
-                    alt_rows = []
-                    for line in names_input.splitlines():
+                    alt = []
+                    for line in names.splitlines():
                         if not line.strip():
-                            alt_rows.append({c:"" for c in ["Ruler Name","Resource 1+2","Alliance","Team","Days Old","Nation Drill Link"]})
+                            alt.append({c:"" for c in cols[1:]})
                             continue
-                        f = line.strip()
-                        m = re.match(r"^(.*?)\s+of\s+(.*?)$", f, flags=re.IGNORECASE)
-                        df2 = st.session_state.df
-                        if m:
-                            r, n = m.group(1).lower(), m.group(2).lower()
-                            sel = df2[(df2["Ruler Name"].str.lower()==r)&(df2["Nation Name"].str.lower()==n)]
-                        else:
-                            sel = df2[df2["Ruler Name"].str.lower()==f.lower()]
-                            if sel.empty:
-                                sel = df2[df2["Nation Name"].str.lower()==f.lower()]
-                        if not sel.empty:
-                            row = sel.iloc[0]
-                            created = pd.to_datetime(row["Created"], errors='coerce')
-                            alt_rows.append({
+                        m = re.match(r'(.+?)\s+of\s+(.+)', line.strip(), flags=re.IGNORECASE)
+                        mask2 = mk(line.strip())
+                        if mask2.any():
+                            row = df[mask2].iloc[0]
+                            days = (now - pd.to_datetime(row["Created"], errors='coerce')).days
+                            alt.append({
                                 "Ruler Name": row["Ruler Name"],
                                 "Resource 1+2": get_resource_1_2(row),
                                 "Alliance": row["Alliance"],
                                 "Team": row["Team"],
-                                "Days Old": (pd.Timestamp.now()-created).days if pd.notnull(created) else "",
-                                "Nation Drill Link": "https://www.cybernations.net/nation_drill_display.asp?Nation_ID="+str(row["Nation ID"])
+                                "Days Old": days,
+                                "Nation Drill Link": "https://www.cybernations.net/nation_drill_display.asp?Nation_ID=" + str(row["Nation ID"])
                             })
                         else:
-                            alt_rows.append({c:f for c in ["Ruler Name","Resource 1+2","Alliance","Team","Days Old","Nation Drill Link"]})
-                    alt_df = pd.DataFrame(alt_rows)
-                    tsv = alt_df.to_csv(sep="\t", index=False)
-                    html = f'<textarea id="alt" style="display:none;">{tsv}</textarea><button onclick="navigator.clipboard.writeText(document.getElementById(\'alt\').value)">Copy Table to Clipboard</button>'
-                    st.components.v1.html(html, height=50)
+                            val = line.strip()
+                            alt.append({c: val for c in cols[1:]})
+                    alt_df = pd.DataFrame(alt, columns=cols[1:])
+                    txt = alt_df.to_csv(sep="\t", index=False)
+                    st.components.v1.html(
+                        f"<textarea id='x' style='display:none;'>{txt}</textarea>"
+                        "<button onclick=\"navigator.clipboard.writeText(document.getElementById('x').value)\">Copy Table to Clipboard</button>",
+                        height=50
+                    )
                     st.table(alt_df)
 
     # -----------------------

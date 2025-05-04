@@ -110,113 +110,73 @@ def main():
             st.session_state.df = df
         else:
             st.error("Failed to load data.")
-    
+
     # -----------------------
     # COLLAPSIBLE SECTION: Ruler Search Interface
     # -----------------------
     with st.expander("Ruler Search Interface", expanded=True):
         st.subheader("Enter Nation or Ruler Names (one per line)")
         names_input = st.text_area("Paste the names here", height=150)
-        
         if st.button("Search", key="ruler_search"):
-            if not names_input.strip():
+            filters = [n.strip() for n in names_input.splitlines() if n.strip()]
+            if not filters:
                 st.info("No names entered. Please paste one or more names.")
             else:
-                # Primary lookup: build a list from non-blank input lines for the main table.
-                filters = [name.strip() for name in names_input.splitlines() if name.strip()]
-                lower_filters = [f.lower() for f in filters]
                 df = st.session_state.df.copy()
-                mask = df["Ruler Name"].str.lower().isin(lower_filters) | df["Nation Name"].str.lower().isin(lower_filters)
-                result_df = df[mask].copy()
-                
-                if result_df.empty:
+                mask = pd.Series(False, index=df.index)
+                for f in filters:
+                    m = re.match(r"^(.*?)\s+of\s+(.*?)$", f, flags=re.IGNORECASE)
+                    if m:
+                        r, n = m.group(1).lower(), m.group(2).lower()
+                        mask |= (df["Ruler Name"].str.lower()==r)&(df["Nation Name"].str.lower()==n)
+                    else:
+                        lookup = f.lower()
+                        mask |= df["Ruler Name"].str.lower().eq(lookup)|df["Nation Name"].str.lower().eq(lookup)
+                result = df[mask].copy()
+                if result.empty:
                     st.info("No matching entries found. Check your input for spelling or extra spaces.")
                 else:
-                    # Calculate additional columns for the main output.
-                    result_df["Resource 1+2"] = result_df.apply(get_resource_1_2, axis=1)
-                    result_df["Nation Drill Link"] = (
-                        "https://www.cybernations.net/nation_drill_display.asp?Nation_ID=" +
-                        result_df["Nation ID"].astype(str)
-                    )
-                    result_df["Created_dt"] = pd.to_datetime(result_df["Created"], errors='coerce')
-                    result_df["Days Old"] = (pd.Timestamp.now() - result_df["Created_dt"]).dt.days
-                    
-                    # Reorder columns: Nation ID, Ruler Name, Resource 1+2, Alliance, Team, Days Old, Nation Drill Link.
-                    display_df = result_df[["Nation ID", "Ruler Name", "Resource 1+2", "Alliance", "Team", "Days Old", "Nation Drill Link"]]
-                    st.dataframe(display_df)
-                    
-                    # Provide a CSV download option.
-                    csv = display_df.to_csv(index=False)
-                    st.download_button("Download Results as CSV", csv, file_name="ruler_search_results.csv", mime="text/csv")
-                    
-                    # -----------------------
-                    # NEW: Alternative Format Output as a Table
-                    # -----------------------
+                    result["Resource 1+2"] = result.apply(get_resource_1_2, axis=1)
+                    result["Nation Drill Link"] = "https://www.cybernations.net/nation_drill_display.asp?Nation_ID="+result["Nation ID"].astype(str)
+                    result["Days Old"] = (pd.Timestamp.now() - pd.to_datetime(result["Created"], errors='coerce')).dt.days
+                    disp = result[["Nation ID","Ruler Name","Resource 1+2","Alliance","Team","Days Old","Nation Drill Link"]]
+                    st.dataframe(disp)
+                    st.download_button("Download Results as CSV", disp.to_csv(index=False), file_name="ruler_search_results.csv", mime="text/csv")
+    
+                    # Alternative Format Output
                     st.markdown("### Alternative Format Output")
-                    st.markdown(
-                        """
-                        This table preserves the original grouping and blank lines as entered.
-                        Blank lines are preserved as empty rows.
-                        """
-                    )
-                    # Process the raw input lines preserving blank lines.
-                    raw_lines = names_input.splitlines()
                     alt_rows = []
-                    for line in raw_lines:
-                        if line.strip() == "":
-                            # Preserve blank row.
-                            alt_rows.append({
-                                "Ruler Name": "",
-                                "Resource 1+2": "",
-                                "Alliance": "",
-                                "Team": "",
-                                "Days Old": "",
-                                "Nation Drill Link": ""
-                            })
+                    for line in names_input.splitlines():
+                        if not line.strip():
+                            alt_rows.append({c:"" for c in ["Ruler Name","Resource 1+2","Alliance","Team","Days Old","Nation Drill Link"]})
                             continue
-                        lookup_name = line.strip()
-                        temp_df = st.session_state.df.copy()
-                        mask = temp_df["Ruler Name"].str.lower() == lookup_name.lower()
-                        if not mask.any():
-                            mask = temp_df["Nation Name"].str.lower() == lookup_name.lower()
-                        if mask.any():
-                            row = temp_df[mask].iloc[0]
-                            ruler = row["Ruler Name"]
-                            res = get_resource_1_2(row)
-                            alliance = row["Alliance"]
-                            team = row["Team"]
-                            created_dt = pd.to_datetime(row["Created"], errors='coerce')
-                            days_old = (pd.Timestamp.now() - created_dt).days if pd.notnull(created_dt) else ""
-                            nation_drill = "https://www.cybernations.net/nation_drill_display.asp?Nation_ID=" + str(row["Nation ID"])
+                        f = line.strip()
+                        m = re.match(r"^(.*?)\s+of\s+(.*?)$", f, flags=re.IGNORECASE)
+                        df2 = st.session_state.df
+                        if m:
+                            r, n = m.group(1).lower(), m.group(2).lower()
+                            sel = df2[(df2["Ruler Name"].str.lower()==r)&(df2["Nation Name"].str.lower()==n)]
+                        else:
+                            sel = df2[df2["Ruler Name"].str.lower()==f.lower()]
+                            if sel.empty:
+                                sel = df2[df2["Nation Name"].str.lower()==f.lower()]
+                        if not sel.empty:
+                            row = sel.iloc[0]
+                            created = pd.to_datetime(row["Created"], errors='coerce')
                             alt_rows.append({
-                                "Ruler Name": ruler,
-                                "Resource 1+2": res,
-                                "Alliance": alliance,
-                                "Team": team,
-                                "Days Old": days_old,
-                                "Nation Drill Link": nation_drill
+                                "Ruler Name": row["Ruler Name"],
+                                "Resource 1+2": get_resource_1_2(row),
+                                "Alliance": row["Alliance"],
+                                "Team": row["Team"],
+                                "Days Old": (pd.Timestamp.now()-created).days if pd.notnull(created) else "",
+                                "Nation Drill Link": "https://www.cybernations.net/nation_drill_display.asp?Nation_ID="+str(row["Nation ID"])
                             })
                         else:
-                            # For unrecognized names, repeat the input text in every column.
-                            alt_rows.append({
-                                "Ruler Name": lookup_name,
-                                "Resource 1+2": lookup_name,
-                                "Alliance": lookup_name,
-                                "Team": lookup_name,
-                                "Days Old": lookup_name,
-                                "Nation Drill Link": lookup_name
-                            })
-                    alt_df = pd.DataFrame(alt_rows, columns=["Ruler Name", "Resource 1+2", "Alliance", "Team", "Days Old", "Nation Drill Link"])
-                    
-                    # Convert alternative table to tab-separated text for copying
-                    alt_table_text = alt_df.to_csv(sep="\t", index=False)
-                    copy_button_html = f"""
-                    <textarea id="alt_table_text" style="display:none;">{alt_table_text}</textarea>
-                    <button onclick="navigator.clipboard.writeText(document.getElementById('alt_table_text').value)">
-                        Copy Table to Clipboard
-                    </button>
-                    """
-                    st.components.v1.html(copy_button_html, height=50)
+                            alt_rows.append({c:f for c in ["Ruler Name","Resource 1+2","Alliance","Team","Days Old","Nation Drill Link"]})
+                    alt_df = pd.DataFrame(alt_rows)
+                    tsv = alt_df.to_csv(sep="\t", index=False)
+                    html = f'<textarea id="alt" style="display:none;">{tsv}</textarea><button onclick="navigator.clipboard.writeText(document.getElementById(\'alt\').value)">Copy Table to Clipboard</button>'
+                    st.components.v1.html(html, height=50)
                     st.table(alt_df)
 
     # -----------------------

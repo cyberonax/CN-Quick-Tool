@@ -117,65 +117,69 @@ def main():
     with st.expander("Ruler Search Interface", expanded=True):
         st.subheader("Enter Nation or Ruler Names (one per line)")
         names = st.text_area("Paste the names here", height=150)
-        if st.button("Search", key="ruler_search"):
-            if not names.strip():
-                st.info("No names entered. Please paste one or more names.")
+        if st.button("Search", key="ruler_search") and names.strip():
+            df = st.session_state.df.copy()
+            now = pd.Timestamp.now()
+            def mk(e):
+                e_l = e.lower()
+                # 1) full-match first
+                m1 = df["Ruler Name"].str.lower().eq(e_l) | df["Nation Name"].str.lower().eq(e_l)
+                if m1.any():
+                    return m1
+                # 2) then try the "X of Y" split
+                m = re.match(r'(.+?)\s+of\s+(.+)', e, flags=re.IGNORECASE)
+                if m:
+                    r,n = m.group(1).lower(), m.group(2).lower()
+                    m2 = df["Ruler Name"].str.lower().eq(r) & df["Nation Name"].str.lower().eq(n)
+                    if m2.any():
+                        return m2
+                # 3) fallback to nothing
+                return pd.Series(False, index=df.index)
+            entries = [l.strip() for l in names.splitlines() if l.strip()]
+            mask = pd.concat([mk(e) for e in entries], axis=1).any(axis=1)
+            res = df[mask].copy()
+            if res.empty:
+                st.info("No matching entries found. Check your input for spelling or extra spaces.")
             else:
-                df = st.session_state.df.copy()
-                now = pd.Timestamp.now()
-                # helper to build mask for one entry
-                def mk(e):
-                    m = re.match(r'(.+?)\s+of\s+(.+)', e, flags=re.IGNORECASE)
-                    if m:
-                        r, n = m.group(1).lower(), m.group(2).lower()
-                        return df["Ruler Name"].str.lower().eq(r) & df["Nation Name"].str.lower().eq(n)
-                    return (df["Ruler Name"].str.lower().eq(e.lower()) |
-                            df["Nation Name"].str.lower().eq(e.lower()))
-                entries = [l.strip() for l in names.splitlines() if l.strip()]
-                mask = pd.concat([mk(e) for e in entries], axis=1).any(axis=1)
-                res = df[mask].copy()
-                if res.empty:
-                    st.info("No matching entries found. Check your input for spelling or extra spaces.")
-                else:
-                    # main output
-                    res["Resource 1+2"] = res.apply(get_resource_1_2, axis=1)
-                    res["Nation Drill Link"] = "https://www.cybernations.net/nation_drill_display.asp?Nation_ID=" + res["Nation ID"].astype(str)
-                    res["Days Old"] = (now - pd.to_datetime(res["Created"], errors='coerce')).dt.days
-                    cols = ["Nation ID","Ruler Name","Resource 1+2","Alliance","Team","Days Old","Nation Drill Link"]
-                    display_df = res[cols]
-                    st.dataframe(display_df)
-                    st.download_button("Download Results as CSV", display_df.to_csv(index=False), "ruler_search_results.csv", "text/csv")
-                    # alternative format
-                    st.markdown("### Alternative Format Output")
-                    alt = []
-                    for line in names.splitlines():
-                        if not line.strip():
-                            alt.append({c:"" for c in cols[1:]})
-                            continue
-                        m = re.match(r'(.+?)\s+of\s+(.+)', line.strip(), flags=re.IGNORECASE)
-                        mask2 = mk(line.strip())
-                        if mask2.any():
-                            row = df[mask2].iloc[0]
-                            days = (now - pd.to_datetime(row["Created"], errors='coerce')).days
-                            alt.append({
-                                "Ruler Name": row["Ruler Name"],
-                                "Resource 1+2": get_resource_1_2(row),
-                                "Alliance": row["Alliance"],
-                                "Team": row["Team"],
-                                "Days Old": days,
-                                "Nation Drill Link": "https://www.cybernations.net/nation_drill_display.asp?Nation_ID=" + str(row["Nation ID"])
-                            })
-                        else:
-                            val = line.strip()
-                            alt.append({c: val for c in cols[1:]})
-                    alt_df = pd.DataFrame(alt, columns=cols[1:])
-                    txt = alt_df.to_csv(sep="\t", index=False)
-                    st.components.v1.html(
-                        f"<textarea id='x' style='display:none;'>{txt}</textarea>"
-                        "<button onclick=\"navigator.clipboard.writeText(document.getElementById('x').value)\">Copy Table to Clipboard</button>",
-                        height=50
-                    )
-                    st.table(alt_df)
+                # main output
+                res["Resource 1+2"] = res.apply(get_resource_1_2, axis=1)
+                res["Nation Drill Link"] = "https://www.cybernations.net/nation_drill_display.asp?Nation_ID=" + res["Nation ID"].astype(str)
+                res["Days Old"] = (now - pd.to_datetime(res["Created"], errors='coerce')).dt.days
+                cols = ["Nation ID","Ruler Name","Resource 1+2","Alliance","Team","Days Old","Nation Drill Link"]
+                display_df = res[cols]
+                st.dataframe(display_df)
+                st.download_button("Download Results as CSV", display_df.to_csv(index=False), "ruler_search_results.csv", "text/csv")
+                # alternative format
+                st.markdown("### Alternative Format Output")
+                alt = []
+                for line in names.splitlines():
+                    if not line.strip():
+                        alt.append({c:"" for c in cols[1:]})
+                        continue
+                    m = re.match(r'(.+?)\s+of\s+(.+)', line.strip(), flags=re.IGNORECASE)
+                    mask2 = mk(line.strip())
+                    if mask2.any():
+                        row = df[mask2].iloc[0]
+                        days = (now - pd.to_datetime(row["Created"], errors='coerce')).days
+                        alt.append({
+                            "Ruler Name": row["Ruler Name"],
+                            "Resource 1+2": get_resource_1_2(row),
+                            "Alliance": row["Alliance"],
+                            "Team": row["Team"],
+                            "Days Old": days,
+                            "Nation Drill Link": "https://www.cybernations.net/nation_drill_display.asp?Nation_ID=" + str(row["Nation ID"])
+                        })
+                    else:
+                        val = line.strip()
+                        alt.append({c: val for c in cols[1:]})
+                alt_df = pd.DataFrame(alt, columns=cols[1:])
+                txt = alt_df.to_csv(sep="\t", index=False)
+                st.components.v1.html(
+                    f"<textarea id='x' style='display:none;'>{txt}</textarea>"
+                    "<button onclick=\"navigator.clipboard.writeText(document.getElementById('x').value)\">Copy Table to Clipboard</button>",
+                    height=50
+                )
+                st.table(alt_df)
 
     # -----------------------
     # COLLAPSIBLE SECTION: Process Comma-Separated Names

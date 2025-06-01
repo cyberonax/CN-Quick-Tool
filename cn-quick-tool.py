@@ -368,44 +368,98 @@ def main():
             """
             Select an alliance to retrieve its list of Nation Rulers.
             
-            The ruler names are displayed one per line and grouped into blocks of 26 names.
-            Each block is presented in its own text box with a copy-to-clipboard button.
+            The first ruler in each 26‐person block is shown as a hyperlink to their message page.
+            The remaining 25 (or fewer) are shown in a textarea, with a “Copy” button.
             """
         )
         if "df" in st.session_state:
             cc_df = st.session_state.df.copy()
             alliance_options = sorted(cc_df["Alliance"].dropna().unique().tolist())
-            default_index = alliance_options.index("Freehold of The Wolves") if "Freehold of The Wolves" in alliance_options else 0
+            default_index = (
+                alliance_options.index("Freehold of The Wolves")
+                if "Freehold of The Wolves" in alliance_options
+                else 0
+            )
         else:
             alliance_options = ["Freehold of The Wolves"]
             default_index = 0
 
-        alliance_selected_cc = st.selectbox("Select Alliance", options=alliance_options, index=default_index, key="alliance_select_cc")
+        alliance_selected_cc = st.selectbox(
+            "Select Alliance",
+            options=alliance_options,
+            index=default_index,
+            key="alliance_select_cc"
+        )
         if st.button("Generate", key="cc_generate", on_click=keep_cc_open):
             st.session_state.cc_expanded = True
-            if "df" in st.session_state:
-                cc_df = st.session_state.df.copy()
-                cc_df = cc_df[cc_df["Alliance"] == alliance_selected_cc]
-                rulers_list = cc_df["Ruler Name"].dropna().tolist()
-                rulers_list = [ruler.strip() for ruler in rulers_list if ruler.strip()]
-                rulers_list = sorted(rulers_list, key=str.lower)
-                groups = [rulers_list[i:i+26] for i in range(0, len(rulers_list), 26)]
-                
-                # Arrange boxes in 3 columns.
-                columns = st.columns(3)
-                for idx, group in enumerate(groups):
-                    block_text = "\n".join(group)
-                    unique_id = f"cc_textarea_{idx}"
-                    html_block = f"""
-                    <div style="margin-bottom: 20px;">
-                      <textarea id="{unique_id}" style="width:100%; height:150px; background-color: black; color: white;" readonly="readonly">{block_text}</textarea>
-                      <br>
-                      <button onclick="navigator.clipboard.writeText(document.getElementById('{unique_id}').value)" style="margin-top:5px;">Copy</button>
-                    </div>
-                    """
-                    col_index = idx % 3
-                    with columns[col_index]:
-                        components.html(html_block, height=200)
+
+            if "df" not in st.session_state:
+                st.info("Nation Statistics data not loaded yet. Please download the data first.")
+                return
+
+            # 1) Filter to the selected alliance
+            cc_df = st.session_state.df.copy()
+            cc_df = cc_df[cc_df["Alliance"] == alliance_selected_cc]
+
+            # 2) Build a list of (Ruler Name, Nation ID) tuples and sort by name
+            rulers = (
+                cc_df[["Ruler Name", "Nation ID"]]
+                .dropna(subset=["Ruler Name", "Nation ID"])
+                .apply(lambda row: (row["Ruler Name"].strip(), int(row["Nation ID"])), axis=1)
+                .tolist()
+            )
+            rulers = sorted(rulers, key=lambda x: x[0].lower())
+
+            # 3) Split into groups of 26
+            groups = [rulers[i : i + 26] for i in range(0, len(rulers), 26)]
+
+            # 4) Arrange the groups into three columns
+            columns = st.columns(3)
+            for idx, group in enumerate(groups):
+                # a) Extract the first entry for hyperlink
+                first_name, first_id = group[0]
+                send_msg_url = f"https://www.cybernations.net/send_message.asp?Nation_ID={first_id}"
+
+                # b) Build the “rest” of the lines (these go into a textarea)
+                rest_names = [name for (name, nid) in group[1:]]
+                rest_block_text = "\n".join(rest_names)
+
+                # c) Generate one HTML block:
+                #    - A clickable <a> for the first name
+                #    - A <textarea> containing the remaining names
+                unique_id = f"cc_textarea_{idx}"
+                html_block = f"""
+                <div style="margin-bottom: 20px; font-family: monospace;">
+                  <!-- First line as a hyperlink -->
+                  <div style="margin-bottom: 5px;">
+                    <a href="{send_msg_url}" target="_blank" style="color: #1e90ff; text-decoration: none;">
+                      {first_name}
+                    </a>
+                  </div>
+                  <!-- The rest of the block in a readonly textarea -->
+                  <textarea
+                    id="{unique_id}"
+                    style="width:100%; height:130px; background-color: black; color: white; font-family: monospace;"
+                    readonly="readonly"
+                  >{rest_block_text}</textarea>
+                  <br>
+                  <button
+                    onclick="
+                      navigator.clipboard.writeText(
+                        document.getElementById('{unique_id}').value
+                      );
+                    "
+                    style="margin-top:5px;"
+                  >
+                    Copy Remaining Lines
+                  </button>
+                </div>
+                """
+
+                # d) Place this block into the appropriate column
+                col_index = idx % 3
+                with columns[col_index]:
+                    components.html(html_block, height=210)
             else:
                 st.info("Nation Statistics data not loaded yet. Please download the data first.")
 

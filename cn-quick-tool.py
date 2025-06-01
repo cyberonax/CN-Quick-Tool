@@ -366,10 +366,13 @@ def main():
     with st.expander("Carbon Copy Rulers Tool", expanded=st.session_state.cc_expanded):
         st.markdown(
             """
+            The ruler names are displayed one per line and grouped into blocks of 26 names.
+            Each block is presented in its own text box with a copy-to-clipboard button.
+            
             Select an alliance to retrieve its list of Nation Rulers.
             
             The first ruler in each 26‐person block is shown as a hyperlink to their message page.
-            The remaining 25 (or fewer) are shown in a textarea, with a “Copy” button.
+            The remaining 25 (or less) is presented in its own text box, with a copy-to-clipboard button.
             """
         )
         if "df" in st.session_state:
@@ -451,7 +454,7 @@ def main():
                     "
                     style="margin-top:5px;"
                   >
-                    Copy Remaining Lines
+                    Copy
                   </button>
                 </div>
                 """

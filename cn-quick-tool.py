@@ -460,8 +460,6 @@ def main():
                 col_index = idx % 3
                 with columns[col_index]:
                     components.html(html_block, height=210)
-            else:
-                st.info("Nation Statistics data not loaded yet. Please download the data first.")
 
 if __name__ == "__main__":
     main()

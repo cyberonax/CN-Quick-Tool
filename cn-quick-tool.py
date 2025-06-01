@@ -66,7 +66,8 @@ def load_data():
         if df is None:
             df = download_and_extract_zip(url2)
         if df is not None:
-            st.success(f"Data loaded successfully from date: {date_str}")
+            display_date = f"{dt.month}/{dt.day}/{dt.year}"
+            st.success(f"Data loaded successfully from date: {display_date}")
             return df
     return None
 
